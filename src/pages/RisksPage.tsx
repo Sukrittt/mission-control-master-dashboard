@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { StatusChip } from '../components/StatusChip'
 import { useDashboard } from '../context/useDashboard'
 import type { RiskSeverity } from '../types'
 
@@ -43,13 +44,13 @@ export function RisksPage() {
   if (!data) return null
 
   return (
-    <section className="panel">
-      <div className="panel-header">
+    <section className="mc-panel">
+      <div className="mc-panel-header">
         <h1>Risk Register</h1>
         <p>{filtered.length} records</p>
       </div>
 
-      <div className="filters-row" aria-label="Risk filters">
+      <div className="mc-filterbar" aria-label="Risk filters">
         <label>
           Severity
           <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as RiskSeverity | 'all')}>
@@ -107,25 +108,41 @@ export function RisksPage() {
         </button>
       </div>
 
+      <div className="mc-filter-chips" aria-label="Active filters">
+        {severityFilter !== 'all' && <span className="mc-chip">Severity: {severityFilter}</span>}
+        {departmentFilter !== 'all' && <span className="mc-chip">Department: {departmentFilter}</span>}
+        {stateFilter !== 'all' && <span className="mc-chip">State: {stateFilter}</span>}
+        {dueWindow !== 'all' && <span className="mc-chip">Due: {dueWindow}</span>}
+      </div>
+
       {filtered.length ? (
-        <ul className="risk-list spaced-list">
-          {filtered.map((risk) => (
-            <li key={risk.id} className={`risk-row severity-${risk.severity}`}>
-              <div>
-                <p className="risk-title">{risk.title}</p>
-                <p className="risk-meta">
-                  {risk.departmentName} • {risk.owner} • {risk.state} • due {risk.dueDate}
-                </p>
-                <p className="clamp-2">{risk.mitigation}</p>
-              </div>
-              <span className={`pill ${risk.severity === 'critical' || risk.severity === 'high' ? 'red' : 'amber'}`}>
-                {risk.severity.toUpperCase()}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="mc-risk-table-wrap">
+          <div className="mc-risk-list-head" aria-hidden="true">
+            <span>Severity</span>
+            <span>Owner</span>
+            <span>Due</span>
+            <span>State</span>
+          </div>
+          <ul className="risk-list spaced-list">
+            {filtered.map((risk) => (
+              <li key={risk.id} className={`mc-risk-row severity-${risk.severity}`}>
+                <div>
+                  <p className="risk-title">{risk.title}</p>
+                  <p className="risk-meta">
+                    {risk.departmentName} • {risk.owner} • {risk.state} • due {risk.dueDate}
+                  </p>
+                  <p className="clamp-2">{risk.mitigation}</p>
+                </div>
+                <div className="risk-right">
+                  <StatusChip label={risk.severity.toUpperCase()} tone={risk.severity} />
+                  <span className="mc-chip">{risk.state}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
-        <div className="state-panel">
+        <div className="state-panel mc-panel">
           <h2>No risks match current filters</h2>
           <p>Try resetting filters to restore the full register.</p>
           <button

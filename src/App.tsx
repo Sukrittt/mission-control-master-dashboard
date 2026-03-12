@@ -1,23 +1,41 @@
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { useMemo } from 'react'
 import './App.css'
 import { DashboardProvider } from './context/DashboardProvider'
 import { useDashboard } from './context/useDashboard'
+import { trackEvent } from './lib/telemetry'
+import { navGroups } from './navigation'
+import { ActivityPage } from './pages/ActivityPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DepartmentDetailPage, DepartmentsPage } from './pages/DepartmentsPage'
+import { IntegrationsPage } from './pages/IntegrationsPage'
 import { LearningsPage } from './pages/LearningsPage'
 import { RisksPage } from './pages/RisksPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
-  '/': { title: 'Dashboard', subtitle: 'Cross-team pulse and mission health' },
+  '/': { title: 'Overview', subtitle: 'Cross-team pulse and mission health' },
   '/departments': { title: 'Departments', subtitle: 'Ownership, updates, and execution status' },
   '/risks': { title: 'Risks', subtitle: 'Severity queue, mitigation, and due windows' },
   '/learnings': { title: 'Learnings', subtitle: 'Operational insights and reusable discoveries' },
+  '/activity': { title: 'Activity', subtitle: 'Unified timeline across update, risk, and learning events' },
+  '/integrations': { title: 'Integrations', subtitle: 'External system health and deep-link access' },
+  '/settings': { title: 'Settings', subtitle: 'Appearance, density, and operations preferences' },
 }
 
 function AppShell() {
   const { data, loading, error, reload } = useDashboard()
   const { pathname } = useLocation()
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('mc-theme')
+    return saved === 'light' || saved === 'dark' ? saved : 'dark'
+  })
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => {
+    const saved = localStorage.getItem('mc-density')
+    return saved === 'compact' ? 'compact' : 'comfortable'
+  })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const currentMeta = useMemo(() => {
     if (pathname.startsWith('/departments/')) {
@@ -34,66 +52,123 @@ function AppShell() {
     return updateTimes.at(-1) ?? data.dateLabel
   }, [data])
 
+  useEffect(() => {
+    localStorage.setItem('mc-theme', theme)
+    trackEvent('theme_changed', { theme })
+  }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('mc-density', density)
+  }, [density])
+
+  useEffect(() => {
+    trackEvent('page_view', { path: pathname })
+  }, [pathname])
+
   return (
-    <main className="page-shell">
-      <header className="top-nav">
-        <div className="brand-block">
-          <strong>Mission Control</strong>
-          <span>Operations Center</span>
-        </div>
+    <main className={`mc-page theme-${theme} density-${density}`}>
+      <div className={`mc-layout ${sidebarCollapsed ? 'is-collapsed' : ''} ${mobileNavOpen ? 'is-mobile-open' : ''}`}>
+        <aside className="mc-sidebar" aria-label="Primary Navigation">
+          <div className="sidebar-brand">
+            <strong>Mission Control</strong>
+            <span>Operations Center</span>
+          </div>
 
-        <div className="page-context">
-          <h2>{currentMeta.title}</h2>
-          <p>{currentMeta.subtitle}</p>
-        </div>
+          <nav>
+            {navGroups.map((group) => (
+              <section className="sidebar-group" key={group.label} aria-label={group.label}>
+                <p className="sidebar-group-label">{group.label}</p>
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.exact}
+                    className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}
+                    onClick={() => {
+                      trackEvent('nav_click', { target: item.path })
+                      setMobileNavOpen(false)
+                    }}
+                  >
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </section>
+            ))}
+          </nav>
 
-        <div className="utility-cluster">
-          <span className="pill status-chip green">● System nominal</span>
-          <span className="muted">Last synced: {lastSync}</span>
-          <button type="button" className="action-button" onClick={() => void reload()}>
-            Refresh
-          </button>
-        </div>
+          <footer className="sidebar-footer">
+            <span className="mc-chip mc-chip--green">System nominal</span>
+            <span className="muted">Last sync: {lastSync}</span>
+            <button type="button" className="action-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              Toggle theme
+            </button>
+          </footer>
+        </aside>
 
-        <nav aria-label="Primary">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/departments" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Departments
-          </NavLink>
-          <NavLink to="/risks" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Risks
-          </NavLink>
-          <NavLink to="/learnings" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Learnings
-          </NavLink>
-        </nav>
-      </header>
+        <section className="mc-main">
+          <header className="mc-topbar">
+            <button type="button" className="action-button mobile-only" onClick={() => setMobileNavOpen((value) => !value)}>
+              Menu
+            </button>
+            <div className="page-context">
+              <h2>{currentMeta.title}</h2>
+              <p>{currentMeta.subtitle}</p>
+            </div>
+            <div className="utility-cluster">
+              <button
+                type="button"
+                className="action-button"
+                onClick={() => {
+                  void reload()
+                  trackEvent('quick_action_used', { action: 'refresh' })
+                }}
+              >
+                Refresh
+              </button>
+              <button type="button" className="action-button" onClick={() => setSidebarCollapsed((value) => !value)}>
+                {sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar
+              </button>
+            </div>
+          </header>
 
-      {loading ? (
-        <section className="state-panel" aria-live="polite">
-          <h2>Loading dashboard…</h2>
-          <p>Fetching latest mission-control data.</p>
+          {loading ? (
+            <section className="state-panel mc-panel" aria-live="polite">
+              <h2>Loading dashboard…</h2>
+              <p>Fetching latest mission-control data.</p>
+            </section>
+          ) : error ? (
+            <section className="state-panel mc-panel" aria-live="assertive">
+              <h2>Could not load dashboard data</h2>
+              <p className="error">{error}</p>
+              <button type="button" className="action-button" onClick={() => void reload()}>
+                Retry
+              </button>
+            </section>
+          ) : (
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/departments" element={<DepartmentsPage />} />
+              <Route path="/departments/:departmentId" element={<DepartmentDetailPage />} />
+              <Route path="/risks" element={<RisksPage />} />
+              <Route path="/learnings" element={<LearningsPage />} />
+              <Route path="/activity" element={<ActivityPage />} />
+              <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route
+                path="/settings"
+                element={
+                  <SettingsPage
+                    theme={theme}
+                    onThemeChange={setTheme}
+                    density={density}
+                    onDensityChange={setDensity}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          )}
         </section>
-      ) : error ? (
-        <section className="state-panel" aria-live="assertive">
-          <h2>Could not load dashboard data</h2>
-          <p className="error">{error}</p>
-          <button type="button" className="action-button" onClick={() => void reload()}>
-            Retry
-          </button>
-        </section>
-      ) : (
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/departments" element={<DepartmentsPage />} />
-          <Route path="/departments/:departmentId" element={<DepartmentDetailPage />} />
-          <Route path="/risks" element={<RisksPage />} />
-          <Route path="/learnings" element={<LearningsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      )}
+      </div>
     </main>
   )
 }

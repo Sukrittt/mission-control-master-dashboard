@@ -26,13 +26,13 @@ export function LearningsPage() {
   if (!data) return null
 
   return (
-    <section className="panel">
-      <div className="panel-header">
+    <section className="mc-panel">
+      <div className="mc-panel-header">
         <h1>Learnings</h1>
         <p>{filtered.length} entries</p>
       </div>
 
-      <div className="filters-row" aria-label="Learning filters">
+      <div className="mc-filterbar" aria-label="Learning filters">
         <label>
           Department
           <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
@@ -80,7 +80,7 @@ export function LearningsPage() {
       {filtered.length ? (
         <div className="learning-list">
           {filtered.map((entry) => (
-            <article key={entry.id} className={`learning-item ${entry.importance === 'high' ? 'is-high' : ''}`}>
+            <article key={entry.id} className={`mc-learning-card ${entry.importance === 'high' ? 'is-high' : ''}`}>
               <div className="learning-top">
                 <strong>{entry.title}</strong>
                 <span>
@@ -90,15 +90,17 @@ export function LearningsPage() {
               <p>{entry.note}</p>
               <div className="tags">
                 {entry.tags.map((tag) => (
-                  <span key={tag}>#{tag}</span>
+                  <span key={tag} className="mc-chip">
+                    #{tag}
+                  </span>
                 ))}
-                {entry.importance === 'high' && <span className="pin">★ Pinned</span>}
+                {entry.importance === 'high' && <span className="mc-chip pin">★ Pinned</span>}
               </div>
             </article>
           ))}
         </div>
       ) : (
-        <div className="state-panel">
+        <div className="state-panel mc-panel">
           <h2>No learnings match current filters</h2>
           <p>Broaden filters to view insights across teams.</p>
           <button
