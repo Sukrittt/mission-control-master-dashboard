@@ -656,6 +656,8 @@ h4 {
 .expense-toolbar {
   align-items: stretch;
   gap: var(--sp-3);
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .toolbar-group {
@@ -705,6 +707,7 @@ h4 {
 
 .category-dropdown {
   position: relative;
+  z-index: 9;
 }
 
 .category-trigger {
@@ -719,15 +722,18 @@ h4 {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  width: min(340px, 88vw);
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(360px, calc(100vh - 180px));
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  background: color-mix(in oklab, var(--panel) 94%, transparent);
+  background: color-mix(in oklab, var(--panel) 96%, transparent);
   padding: var(--sp-2);
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--sp-2);
-  z-index: 8;
+  z-index: 30;
   box-shadow: var(--shadow-2);
+  overflow: hidden;
 }
 
 .category-menu input[type='search'] {
@@ -740,9 +746,10 @@ h4 {
 }
 
 .category-menu-list {
-  max-height: 180px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
+  align-content: start;
   gap: 6px;
   padding-right: 2px;
 }
@@ -883,6 +890,7 @@ input[type='date']:hover {
   grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
   gap: var(--sp-2);
   align-items: end;
+  min-height: 148px;
 }
 
 .spark-bar-wrap {
@@ -904,6 +912,7 @@ input[type='date']:hover {
 }
 
 .category-row {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -912,6 +921,18 @@ input[type='date']:hover {
   border-radius: var(--r-sm);
   padding: 8px 10px;
   background: var(--panel-soft);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.category-row:hover {
+  border-color: color-mix(in oklab, var(--accent-strong) 30%, var(--border));
+}
+
+.category-row.is-focused {
+  border-color: color-mix(in oklab, var(--accent-strong) 45%, var(--border));
+  background: color-mix(in oklab, var(--accent-soft) 42%, var(--panel-soft));
 }
 
 .mc-anomaly-wrap {
@@ -961,7 +982,9 @@ input[type='date']:hover {
 
 .mc-insight-block {
   border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--panel-soft) 88%, transparent);
+  border-left: 3px solid color-mix(in oklab, var(--accent-strong) 28%, var(--border));
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--panel-soft) 92%, var(--panel));
   padding: var(--sp-2);
 }
 
@@ -978,8 +1001,8 @@ input[type='date']:hover {
 }
 
 .mc-insight-block--amber {
-  background: color-mix(in oklab, #f59e0b 12%, var(--panel-soft));
-  border-color: color-mix(in oklab, #f59e0b 26%, var(--border));
+  background: color-mix(in oklab, var(--panel-soft) 92%, var(--panel));
+  border-color: var(--border);
 }
 
 .insight-actions {
@@ -1207,6 +1230,26 @@ summary:focus-visible,
   .mc-filterbar {
     flex-wrap: nowrap;
     align-items: stretch;
+  }
+
+  .expense-toolbar {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .expense-toolbar .toolbar-group,
+  .expense-toolbar .custom-dates,
+  .expense-toolbar .category-dropdown,
+  .expense-toolbar .category-trigger {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .expense-toolbar .category-menu {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: min(320px, calc(100vh - 220px));
   }
 
   .mc-filterbar label,

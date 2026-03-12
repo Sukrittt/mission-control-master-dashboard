@@ -30,6 +30,7 @@ export function ExpensePage() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
   const [applyCategoryToKpis, setApplyCategoryToKpis] = useState(true)
+  const [focusedCategory, setFocusedCategory] = useState<string | null>(null)
   const categoryDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const latestDate = useMemo(() => {
@@ -135,7 +136,13 @@ export function ExpensePage() {
   const stalenessText = formatLastUpdated(panel.lastUpdated)
   const duesReceivableDisplay = 0
 
-  const periodLabel = period === 'mtd' ? 'MTD' : period === 'custom' ? 'Custom range' : period.toUpperCase()
+  const periodLabel = period === 'mtd' ? 'Month to date' : period === 'custom' ? 'Custom range' : period === '7d' ? 'Last 7 days' : 'Last 30 days'
+  const periodOptions: Array<{ key: PeriodKey; label: string; helper: string }> = [
+    { key: '7d', label: 'Last 7 days', helper: 'Quick pulse for recent movement.' },
+    { key: '30d', label: 'Last 30 days', helper: 'Best for monthly drift checks.' },
+    { key: 'mtd', label: 'Month to date', helper: 'Tracks progress against this month cap.' },
+    { key: 'custom', label: 'Custom range', helper: 'Set exact start/end window.' },
+  ]
   const categoryScopeLabel = selectedCategories.length
     ? `Filtered by: ${selectedCategories.length} categor${selectedCategories.length === 1 ? 'y' : 'ies'}`
     : 'Global (all categories)'
@@ -143,23 +150,39 @@ export function ExpensePage() {
     ? `KPIs filtered by selected categories (${selectedShare}% of tracked spend)`
     : 'KPIs are global across all categories'
 
-  const cause = selectedCategories.length
-    ? `${selectedCategories.join(', ')} are driving the current discretionary load.`
-    : `${panel.topCategories[0]?.category ?? 'Top category'} remains the primary spend driver.`
+  const effectiveFocusedCategory = filteredCategories.some((row) => row.category === focusedCategory)
+    ? focusedCategory
+    : filteredCategories[0]?.category ?? null
+  const focusedCategoryRow = filteredCategories.find((row) => row.category === effectiveFocusedCategory) ?? filteredCategories[0]
+  const focusedCategoryShare = focusedCategoryRow?.sharePct ?? selectedShare
 
-  const impact = `Window spend is ₹${filteredTotal.toFixed(0)} in ${periodLabel} with ${periodDelta > 0 ? '+' : ''}${periodDelta.toFixed(1)}% momentum.`
+  const cause = focusedCategoryRow
+    ? `${focusedCategoryRow.category} is currently the primary pressure point and accounts for ${focusedCategoryShare}% of tracked category spend.`
+    : selectedCategories.length
+      ? `${selectedCategories.join(', ')} are driving the current discretionary load.`
+      : `${panel.topCategories[0]?.category ?? 'Top category'} remains the primary spend driver.`
 
-  const actionSteps = useCategoryScopeOnKpi
+  const impact = focusedCategoryRow
+    ? `${periodLabel} spend sits at ₹${filteredTotal.toFixed(0)} with ${periodDelta > 0 ? '+' : ''}${periodDelta.toFixed(1)}% momentum. ${focusedCategoryRow.category} alone is ₹${focusedCategoryRow.amountInr.toFixed(0)}.`
+    : `Window spend is ₹${filteredTotal.toFixed(0)} in ${periodLabel} with ${periodDelta > 0 ? '+' : ''}${periodDelta.toFixed(1)}% momentum.`
+
+  const actionSteps = focusedCategoryRow
     ? [
-        'Pause new purchases in selected categories for 48 hours.',
-        'Set a hard per-transaction cap before checkout.',
-        'Review each selected category once daily and clear non-urgent carts.',
+        `Set a hard cap for ${focusedCategoryRow.category} for the next 48 hours.`,
+        `Require a 24-hour cooldown before any new ${focusedCategoryRow.category} purchase.`,
+        `Do one nightly audit for ${focusedCategoryRow.category} and remove non-urgent items.`,
       ]
-    : [
-        'Apply the 48-hour cooling rule to non-essential purchases.',
-        'Prioritize dues collection before discretionary spending resumes.',
-        'Do one nightly spend review against daily soft cap.',
-      ]
+    : useCategoryScopeOnKpi
+      ? [
+          'Pause new purchases in selected categories for 48 hours.',
+          'Set a hard per-transaction cap before checkout.',
+          'Review each selected category once daily and clear non-urgent carts.',
+        ]
+      : [
+          'Apply the 48-hour cooling rule to non-essential purchases.',
+          'Prioritize dues collection before discretionary spending resumes.',
+          'Do one nightly spend review against daily soft cap.',
+        ]
 
   const peakPoint = filteredTrend.reduce(
     (peak, row) => (row.value > peak.value ? row : peak),
@@ -182,19 +205,20 @@ export function ExpensePage() {
         <div className="toolbar-group toolbar-group--period">
           <span className="toolbar-label">Period range</span>
           <p className="toolbar-help">Changes trend window, KPI totals, and anomalies.</p>
-          <div className="mc-filter-chips">
-            <button type="button" className={`action-button ${period === '7d' ? 'is-active' : ''}`} onClick={() => setPeriod('7d')}>
-              7D
-            </button>
-            <button type="button" className={`action-button ${period === '30d' ? 'is-active' : ''}`} onClick={() => setPeriod('30d')}>
-              30D
-            </button>
-            <button type="button" className={`action-button ${period === 'mtd' ? 'is-active' : ''}`} onClick={() => setPeriod('mtd')}>
-              MTD
-            </button>
-            <button type="button" className={`action-button ${period === 'custom' ? 'is-active' : ''}`} onClick={() => setPeriod('custom')}>
-              Custom
-            </button>
+          <p className="toolbar-help tiny-copy">Tip: hover/tap a preset to see what each period is best for.</p>
+          <div className="mc-filter-chips" role="tablist" aria-label="Period presets">
+            {periodOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`action-button ${period === option.key ? 'is-active' : ''}`}
+                onClick={() => setPeriod(option.key)}
+                title={option.helper}
+                aria-label={`${option.label}. ${option.helper}`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -215,7 +239,13 @@ export function ExpensePage() {
           <span className="toolbar-label">Category filter</span>
           <p className="toolbar-help">Filters category pressure and optionally KPI cards.</p>
           <div className="category-dropdown" ref={categoryDropdownRef}>
-            <button type="button" className={`action-button category-trigger ${isCategoryOpen ? 'is-active' : ''}`} onClick={() => setIsCategoryOpen((prev) => !prev)}>
+            <button
+              type="button"
+              className={`action-button category-trigger ${isCategoryOpen ? 'is-active' : ''}`}
+              onClick={() => setIsCategoryOpen((prev) => !prev)}
+              aria-haspopup="menu"
+              aria-expanded={isCategoryOpen}
+            >
               Categories
               <span className="mc-chip">{selectedCategories.length || 'All'}</span>
             </button>
@@ -358,27 +388,40 @@ export function ExpensePage() {
             <p>{categoryScopeLabel}</p>
           </div>
           <div className="spaced-list">
-            {filteredCategories.map((category) => (
-              <div key={category.category} className="category-row">
-                <div>
-                  <p className="risk-title">{category.category}</p>
-                  <p className="risk-meta">₹{category.amountInr.toFixed(0)}</p>
-                </div>
-                <span className="mc-chip">{category.sharePct}%</span>
-              </div>
-            ))}
+            {filteredCategories.map((category) => {
+              const isFocused = focusedCategoryRow?.category === category.category
+              return (
+                <button
+                  key={category.category}
+                  type="button"
+                  className={`category-row ${isFocused ? 'is-focused' : ''}`}
+                  onClick={() => setFocusedCategory(category.category)}
+                  aria-pressed={isFocused}
+                >
+                  <div>
+                    <p className="risk-title">{category.category}</p>
+                    <p className="risk-meta">₹{category.amountInr.toFixed(0)}</p>
+                  </div>
+                  <span className="mc-chip">{category.sharePct}%</span>
+                </button>
+              )
+            })}
           </div>
 
           <section className="mc-insight-stack">
-            <article className="mc-insight-block mc-insight-block--amber">
+            <article className="mc-insight-block">
+              <h4>Focus category</h4>
+              <p>{focusedCategoryRow?.category ?? 'No category selected yet'}</p>
+            </article>
+            <article className="mc-insight-block">
               <h4>Why pressure is rising</h4>
               <p>{cause}</p>
             </article>
-            <article className="mc-insight-block mc-insight-block--amber">
+            <article className="mc-insight-block">
               <h4>Current impact</h4>
               <p>{impact}</p>
             </article>
-            <article className="mc-insight-block mc-insight-block--amber">
+            <article className="mc-insight-block">
               <h4>Do this in the next 48h</h4>
               <ul className="insight-actions">
                 {actionSteps.map((step) => (
