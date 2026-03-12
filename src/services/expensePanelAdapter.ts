@@ -24,19 +24,108 @@ export interface ExpensePanelData {
   runRateStatus: 'ontrack' | 'watch' | 'overshoot'
   monthSpendInr: number
   monthlySpendCapInr: number
+  dailySoftCapInr: number
   avgDailyLast7Inr: number
   avgDailyPrev7Inr: number
   trendPct: number
   topCategories: Array<{ category: string; amountInr: number; sharePct: number }>
   duesReceivableInr: number
+  essentialSpendInr: number
+  discretionarySpendInr: number
+  essentialSharePct: number
+  discretionarySharePct: number
   alerts: string[]
   deepLinks: Array<{ label: string; url: string }>
   miniTrend: Array<{ date: string; value: number }>
+  weeklyAnomalies: Array<{ label: string; totalInr: number; key: string }>
+  weeklyInsights: {
+    wentWrong: string
+    nextWeek: string
+  }
 }
 
 function round(value: number, digits = 1): number {
   const base = 10 ** digits
   return Math.round(value * base) / base
+}
+
+function weekLabel(dateObj: Date): string {
+  const start = new Date(dateObj)
+  const day = start.getDay()
+  const diffToMonday = (day + 6) % 7
+  start.setDate(start.getDate() - diffToMonday)
+  start.setHours(0, 0, 0, 0)
+
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+
+  const format = (date: Date) =>
+    date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+    })
+
+  return `${format(start)}-${format(end)}`
+}
+
+function toWeeklyAnomalies(rows: Array<{ date: string; amountInr: number }>) {
+  const weeklyTotals = new Map<string, { label: string; totalInr: number; key: string }>()
+
+  rows.forEach((row) => {
+    const date = new Date(row.date)
+    if (Number.isNaN(date.getTime())) return
+
+    const start = new Date(date)
+    const day = start.getDay()
+    const diffToMonday = (day + 6) % 7
+    start.setDate(start.getDate() - diffToMonday)
+    start.setHours(0, 0, 0, 0)
+
+    const key = start.toISOString().slice(0, 10)
+    const existing = weeklyTotals.get(key)
+
+    if (existing) {
+      existing.totalInr += row.amountInr
+      return
+    }
+
+    weeklyTotals.set(key, {
+      key,
+      label: weekLabel(start),
+      totalInr: row.amountInr,
+    })
+  })
+
+  return [...weeklyTotals.values()].sort((a, b) => b.totalInr - a.totalInr)
+}
+
+function buildWeeklyInsights(input: ExpensePanelContract, avgDailyLast7Inr: number, trendPct: number): ExpensePanelData['weeklyInsights'] {
+  const topCategory = input.topCategories[0]
+  const softCapVariancePct = input.meta.dailySoftCapInr
+    ? ((avgDailyLast7Inr - input.meta.dailySoftCapInr) / input.meta.dailySoftCapInr) * 100
+    : 0
+
+  const wentWrongBits = [
+    topCategory
+      ? `${topCategory.category} is still the biggest drag at ₹${topCategory.amountInr.toFixed(0)}.`
+      : 'No clear top category pressure yet.',
+    `7d average is ₹${avgDailyLast7Inr.toFixed(0)}/day (${trendPct > 0 ? '+' : ''}${round(trendPct)}% vs previous week).`,
+  ]
+
+  if (softCapVariancePct > 0) {
+    wentWrongBits.push(`Daily run rate is ${round(softCapVariancePct)}% above soft cap.`)
+  }
+
+  const nextWeekBits = [
+    topCategory ? `Set a hard pre-approval cap on ${topCategory.category} for this week.` : 'Keep spend logging consistent daily.',
+    'Freeze non-essential spends for 48h when any day crosses soft cap.',
+    'Use dues recovery to offset upcoming discretionary payouts.',
+  ]
+
+  return {
+    wentWrong: wentWrongBits.join(' '),
+    nextWeek: nextWeekBits.join(' '),
+  }
 }
 
 export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelData {
@@ -52,6 +141,13 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
   const runRateStatus: ExpensePanelData['runRateStatus'] =
     spendVsCapPct > 100 ? 'overshoot' : spendVsCapPct > 85 ? 'watch' : 'ontrack'
 
+  const essentialSharePct = input.totals.monthSpendInr
+    ? (input.totals.essentialSpendInr / input.totals.monthSpendInr) * 100
+    : 0
+  const discretionarySharePct = input.totals.monthSpendInr
+    ? (input.totals.discretionarySpendInr / input.totals.monthSpendInr) * 100
+    : 0
+
   return {
     lastUpdated: input.meta.generatedAt,
     month: input.meta.month,
@@ -59,6 +155,7 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
     runRateStatus,
     monthSpendInr: input.totals.monthSpendInr,
     monthlySpendCapInr: input.meta.monthlySpendCapInr,
+    dailySoftCapInr: input.meta.dailySoftCapInr,
     avgDailyLast7Inr: round(avgDailyLast7Inr, 0),
     avgDailyPrev7Inr: round(avgDailyPrev7Inr, 0),
     trendPct: round(trendPct),
@@ -67,8 +164,14 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
       sharePct: round((row.amountInr / input.totals.monthSpendInr) * 100),
     })),
     duesReceivableInr: input.totals.duesReceivableInr,
+    essentialSpendInr: input.totals.essentialSpendInr,
+    discretionarySpendInr: input.totals.discretionarySpendInr,
+    essentialSharePct: round(essentialSharePct),
+    discretionarySharePct: round(discretionarySharePct),
     alerts: input.alerts,
     deepLinks: input.deepLinks,
     miniTrend: input.dailySpend.slice(-10).map((row) => ({ date: row.date, value: row.amountInr })),
+    weeklyAnomalies: toWeeklyAnomalies(input.dailySpend).slice(0, 8),
+    weeklyInsights: buildWeeklyInsights(input, avgDailyLast7Inr, trendPct),
   }
 }

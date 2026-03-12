@@ -24,11 +24,11 @@
   --sp-6: 22px;
   --sp-8: 30px;
 
-  --r-xs: 6px;
-  --r-sm: 8px;
-  --r-md: 10px;
-  --r-lg: 12px;
-  --r-pill: 999px;
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 9px;
+  --r-pill: 7px;
 
   --stroke-soft: 1px;
   --shadow-0: none;
@@ -739,6 +739,69 @@ select:hover {
   border-radius: var(--r-sm);
   padding: 8px 10px;
   background: var(--panel-soft);
+}
+
+.mc-anomaly-wrap {
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  padding: var(--sp-2);
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.mc-anomaly-wrap h4 {
+  font-size: var(--fs-12);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.mc-compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-12);
+}
+
+.mc-compact-table th,
+.mc-compact-table td {
+  border-bottom: 1px solid var(--divider-soft);
+  padding: 8px;
+  text-align: left;
+}
+
+.mc-compact-table thead th {
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--fs-11);
+}
+
+.mc-compact-table th.num,
+.mc-compact-table td.num {
+  text-align: right;
+}
+
+.mc-insight-stack {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.mc-insight-block {
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--panel-soft) 88%, transparent);
+  padding: var(--sp-2);
+}
+
+.mc-insight-block h4 {
+  font-size: var(--fs-11);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  margin-bottom: var(--sp-1);
+}
+
+.mc-insight-block p {
+  font-size: var(--fs-13);
 }
 
 .mc-sticky-mini-header {

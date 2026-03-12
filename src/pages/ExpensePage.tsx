@@ -10,7 +10,9 @@ export function ExpensePage() {
       <section className="headline">
         <div>
           <h1>Expense Command Center</h1>
-          <p className="muted">{panel.month} • Updated {panel.lastUpdated}</p>
+          <p className="muted">
+            {panel.month} • Updated {panel.lastUpdated}
+          </p>
         </div>
         <span className={`mc-chip mc-chip--${panel.runRateStatus === 'overshoot' ? 'red' : panel.runRateStatus === 'watch' ? 'amber' : 'green'}`}>
           {panel.runRateStatus === 'overshoot' ? 'CAP BREACHED' : panel.runRateStatus === 'watch' ? 'WATCH' : 'ON TRACK'}
@@ -21,12 +23,24 @@ export function ExpensePage() {
         <article className="mc-kpi-card">
           <p>Month Spend</p>
           <strong className={panel.runRateStatus === 'overshoot' ? 'red' : ''}>₹{panel.monthSpendInr.toFixed(0)}</strong>
-          <span className="muted">Cap ₹{panel.monthlySpendCapInr.toFixed(0)} ({panel.spendVsCapPct}%)</span>
+          <span className="muted">
+            Cap ₹{panel.monthlySpendCapInr.toFixed(0)} ({panel.spendVsCapPct}%)
+          </span>
         </article>
         <article className="mc-kpi-card">
           <p>7-Day Run Rate</p>
           <strong>₹{panel.avgDailyLast7Inr.toFixed(0)}/day</strong>
-          <span className="muted">vs prev week: {panel.trendPct > 0 ? '+' : ''}{panel.trendPct}%</span>
+          <span className="muted">
+            vs prev week: {panel.trendPct > 0 ? '+' : ''}
+            {panel.trendPct}% • soft cap ₹{panel.dailySoftCapInr.toFixed(0)}
+          </span>
+        </article>
+        <article className="mc-kpi-card">
+          <p>Spend Mix</p>
+          <strong>
+            {panel.discretionarySharePct}% / {panel.essentialSharePct}%
+          </strong>
+          <span className="muted">Discretionary vs essential split</span>
         </article>
         <article className="mc-kpi-card">
           <p>Dues Receivable</p>
@@ -49,6 +63,26 @@ export function ExpensePage() {
               </span>
             ))}
           </div>
+
+          <div className="mc-anomaly-wrap">
+            <h4>Weekly anomalies (high-to-low)</h4>
+            <table className="mc-compact-table">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th className="num">Spend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {panel.weeklyAnomalies.map((week) => (
+                  <tr key={week.key}>
+                    <td>{week.label}</td>
+                    <td className="num">₹{week.totalInr.toFixed(0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </article>
 
         <article className="mc-panel">
@@ -67,6 +101,18 @@ export function ExpensePage() {
               </div>
             ))}
           </div>
+
+          <section className="mc-insight-stack">
+            <article className="mc-insight-block">
+              <h4>What went wrong this week</h4>
+              <p>{panel.weeklyInsights.wentWrong}</p>
+            </article>
+            <article className="mc-insight-block">
+              <h4>What to do next week</h4>
+              <p>{panel.weeklyInsights.nextWeek}</p>
+            </article>
+          </section>
+
           <div className="tags">
             {panel.deepLinks.map((link) => (
               <a key={link.label} className="inline-link" href={link.url} target="_blank" rel="noreferrer">
