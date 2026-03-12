@@ -6,17 +6,17 @@ export function DepartmentsPage() {
   if (!data) return null
 
   return (
-    <section className="panel">
+    <section className="panel" aria-label="Department status overview">
       <div className="panel-header">
         <h1>Departments</h1>
         <p>Ownership and current operating status</p>
       </div>
       <div className="department-grid" aria-label="Department cards">
         {data.departments.map((department) => (
-          <article key={department.id} className="department-card">
+          <article key={department.id} className={`department-card status-${department.status}`}>
             <div className="department-title">
               <h2>{department.name}</h2>
-              <span className={`pill ${department.status}`}>{department.status.toUpperCase()}</span>
+              <span className={`pill status-chip ${department.status}`}>{department.status.toUpperCase()}</span>
             </div>
             <p>Lead: {department.lead}</p>
             <p>Last update: {department.lastUpdate}</p>
@@ -50,13 +50,15 @@ export function DepartmentDetailPage() {
     return (
       <section className="state-panel">
         <h2>Department not found</h2>
-        <Link to="/departments">Back to departments</Link>
+        <Link className="inline-link" to="/departments">
+          Back to departments
+        </Link>
       </section>
     )
   }
 
   return (
-    <section className="panel">
+    <section className="panel" aria-label={`${department.name} details`}>
       <div className="panel-header">
         <h1>{department.name}</h1>
         <p>
@@ -76,13 +78,13 @@ export function DepartmentDetailPage() {
         <ul className="risk-list spaced-list">
           {risks.length ? (
             risks.map((risk) => (
-              <li key={risk.id}>
+              <li key={risk.id} className={`risk-row severity-${risk.severity}`}>
                 <div>
                   <p className="risk-title">{risk.title}</p>
                   <p className="risk-meta">
                     {risk.owner} • due {risk.dueDate} • {risk.state}
                   </p>
-                  <p>{risk.mitigation}</p>
+                  <p className="clamp-2">{risk.mitigation}</p>
                 </div>
                 <span className={`pill ${risk.severity === 'critical' || risk.severity === 'high' ? 'red' : 'amber'}`}>
                   {risk.severity.toUpperCase()}
