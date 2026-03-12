@@ -219,6 +219,37 @@ h4 {
   transform: translateX(0);
 }
 
+.sidebar-link-icon {
+  width: 18px;
+  text-align: center;
+  font-size: var(--fs-12);
+  color: var(--muted-2);
+}
+
+.sidebar-link.active .sidebar-link-icon,
+.sidebar-link:hover .sidebar-link-icon {
+  color: var(--text);
+}
+
+.mc-layout.is-collapsed .sidebar-brand span,
+.mc-layout.is-collapsed .sidebar-group-label,
+.mc-layout.is-collapsed .sidebar-link-label,
+.mc-layout.is-collapsed .sidebar-footer .muted,
+.mc-layout.is-collapsed .sidebar-footer .action-button {
+  display: none;
+}
+
+.mc-layout.is-collapsed .sidebar-brand,
+.mc-layout.is-collapsed .sidebar-footer,
+.mc-layout.is-collapsed .sidebar-group {
+  justify-items: center;
+}
+
+.mc-layout.is-collapsed .sidebar-link {
+  justify-content: center;
+  padding: 0;
+}
+
 .sidebar-footer {
   border-top: 1px solid var(--divider-soft);
   padding-top: var(--sp-3);
@@ -517,6 +548,11 @@ h4 {
   opacity: 0.9;
 }
 
+.mc-chip-cue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: var(--fs-11);
+}
+
 .mc-chip--green {
   color: var(--ok-fg);
   background: var(--ok-bg);
@@ -617,7 +653,43 @@ h4 {
   gap: var(--sp-2);
 }
 
+.expense-toolbar {
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.toolbar-group {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.toolbar-label {
+  color: var(--muted-2);
+  font-size: var(--fs-11);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.custom-dates {
+  grid-template-columns: repeat(2, minmax(136px, 1fr));
+  align-items: end;
+}
+
+.custom-dates label {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-11);
+  color: var(--muted-2);
+}
+
+.expense-toolbar .action-button,
+.expense-toolbar select,
+.expense-toolbar input[type='date'] {
+  min-height: 34px;
+}
+
 select,
+input[type='date'],
 .action-button,
 .inline-link,
 .sidebar-link {
@@ -633,7 +705,8 @@ select,
     border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
 }
 
-select {
+select,
+input[type='date'] {
   min-width: 170px;
 }
 
@@ -650,7 +723,8 @@ select {
 
 .action-button:hover,
 .inline-link:hover,
-select:hover {
+select:hover,
+input[type='date']:hover {
   border-color: color-mix(in oklab, var(--accent-strong) 35%, var(--border));
 }
 
@@ -804,6 +878,34 @@ select:hover {
   font-size: var(--fs-13);
 }
 
+.expense-kpi {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.kpi-delta {
+  font-size: var(--fs-12);
+  color: var(--muted);
+  font-weight: var(--fw-medium);
+}
+
+.micro-signal {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-11);
+  color: var(--muted-2);
+}
+
+.expense-view {
+  --accent: #6b7280;
+  --accent-strong: #4b5563;
+  --accent-soft: rgba(75, 85, 99, 0.14);
+}
+
+.expense-view .spark-bar {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--text) 22%, transparent), color-mix(in oklab, var(--panel-soft) 90%, transparent));
+  border-color: color-mix(in oklab, var(--text) 16%, var(--border));
+}
+
 .mc-sticky-mini-header {
   position: sticky;
   top: 62px;
@@ -916,6 +1018,7 @@ select:hover {
 a:focus-visible,
 button:focus-visible,
 select:focus-visible,
+input[type='date']:focus-visible,
 summary:focus-visible,
 .sidebar-link:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--accent-strong) 70%, transparent);
@@ -995,12 +1098,14 @@ summary:focus-visible,
 
   .mc-filterbar label,
   .mc-filterbar select,
+  .mc-filterbar input[type='date'],
   .action-button {
     min-width: 140px;
     width: auto;
   }
 
   select,
+  input[type='date'],
   .action-button,
   .inline-link,
   .sidebar-link {

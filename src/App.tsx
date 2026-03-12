@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import { DashboardProvider } from './context/DashboardProvider'
@@ -26,6 +26,18 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/activity': { title: 'Activity', subtitle: 'Unified timeline across update, risk, and learning events' },
   '/integrations': { title: 'Integrations', subtitle: 'External system health and deep-link access' },
   '/settings': { title: 'Settings', subtitle: 'Appearance, density, and operations preferences' },
+}
+
+const navIcons: Record<string, ReactNode> = {
+  '/': '◉',
+  '/departments': '▦',
+  '/risks': '▲',
+  '/learnings': '✦',
+  '/activity': '◷',
+  '/expense': '₹',
+  '/fitness': '◍',
+  '/integrations': '◎',
+  '/settings': '⚙',
 }
 
 function AppShell() {
@@ -98,13 +110,16 @@ function AppShell() {
                     to={item.path}
                     end={item.exact}
                     className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}
+                    aria-label={item.label}
+                    title={sidebarCollapsed ? item.label : undefined}
                     onClick={() => {
                       trackEvent('nav_click', { target: item.path })
                       setMobileNavOpen(false)
                     }}
                   >
                     <span className="sidebar-link-indicator" aria-hidden="true" />
-                    <span>{item.label}</span>
+                    <span className="sidebar-link-icon" aria-hidden="true">{navIcons[item.path] ?? '•'}</span>
+                    <span className="sidebar-link-label">{item.label}</span>
                   </NavLink>
                 ))}
               </section>
