@@ -1,5 +1,10 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import expenseSample from '../data/expensePanel.sample.json'
+import fitnessContract from '../data/fitnessDashboard.sample.json'
+import { SparkBars } from '../components/SparkBars'
+import { toExpensePanelData } from '../services/expensePanelAdapter'
+import { toFitnessDashboardPanel } from '../services/fitnessDashboardAdapter'
 import { PageSectionHeader } from '../components/PageSectionHeader'
 import { StatusChip } from '../components/StatusChip'
 import { TimelineList } from '../components/TimelineList'
@@ -31,6 +36,9 @@ export function DashboardPage() {
       }),
     [data?.risks],
   )
+
+  const expensePanel = toExpensePanelData(expenseSample)
+  const fitnessPanel = toFitnessDashboardPanel(fitnessContract)
 
   if (!data) return null
 
@@ -121,6 +129,50 @@ export function DashboardPage() {
               )
             })}
           </ul>
+        </article>
+      </section>
+
+      <section className="mc-main-panels" aria-label="Expense and fitness integration">
+        <article className="mc-panel" aria-label="Expense integration snapshot">
+          <PageSectionHeader title="Expense Snapshot" subtitle="Run-rate, pressure categories, and direct handoff" />
+          <section className="mc-kpi-strip mc-kpi-strip--stack">
+            <article className="mc-kpi-card">
+              <p>Spend vs cap</p>
+              <strong className={expensePanel.runRateStatus === 'overshoot' ? 'red' : expensePanel.runRateStatus === 'watch' ? 'amber' : 'green'}>
+                ₹{expensePanel.monthSpendInr.toFixed(0)} / ₹{expensePanel.monthlySpendCapInr.toFixed(0)}
+              </strong>
+              <span className="muted">{expensePanel.spendVsCapPct}% used • 7d trend {expensePanel.trendPct > 0 ? '+' : ''}{expensePanel.trendPct}%</span>
+            </article>
+          </section>
+          <SparkBars data={expensePanel.miniTrend.slice(-7)} formatValue={(value) => `₹${value.toFixed(0)}`} />
+          <div className="tags">
+            <span className="mc-chip mc-chip--amber">Dues receivable: ₹{expensePanel.duesReceivableInr.toFixed(2)}</span>
+            <Link className="inline-link" to="/expense">
+              Open Expense Control →
+            </Link>
+            <a className="inline-link" href="../expense-dashboard/" target="_blank" rel="noreferrer">
+              Launch full Expense dashboard ↗
+            </a>
+          </div>
+        </article>
+
+        <article className="mc-panel" aria-label="Fitness integration snapshot">
+          <PageSectionHeader title="Fitness Snapshot" subtitle="Weight trend, adherence, and training pace" />
+          <section className="mc-kpi-strip mc-kpi-strip--stack">
+            <article className="mc-kpi-card">
+              <p>Target progress</p>
+              <strong className="green">{fitnessPanel.currentWeightKg.toFixed(1)} kg → {fitnessPanel.targetWeightKg.toFixed(1)} kg</strong>
+              <span className="muted">{fitnessPanel.remainingKg.toFixed(1)} kg remaining • adherence {fitnessPanel.adherencePct.toFixed(1)}%</span>
+            </article>
+          </section>
+          <SparkBars data={fitnessPanel.weightSeries} formatValue={(value) => `${value.toFixed(1)} kg`} />
+          <div className="tags">
+            <span className="mc-chip mc-chip--green">Protein {fitnessPanel.avgProteinG.toFixed(1)}g / {fitnessPanel.proteinTargetG}g</span>
+            <span className="mc-chip mc-chip--green">Steps {fitnessPanel.avgSteps.toLocaleString()} avg</span>
+            <Link className="inline-link" to="/fitness">
+              Open Fitness board →
+            </Link>
+          </div>
         </article>
       </section>
 

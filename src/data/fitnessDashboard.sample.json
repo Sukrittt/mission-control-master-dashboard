@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "version": "v1.0",
+    "generatedAt": "2026-03-12T15:20:00Z",
+    "timezone": "Asia/Calcutta",
+    "weekStart": "2026-03-09"
+  },
+  "athleteProfile": {
+    "name": "Sukrit",
+    "startWeightKg": 68.89,
+    "currentWeightKg": 62.2,
+    "targetWeightKg": 58
+  },
+  "targets": {
+    "calorieRange": { "min": 1600, "max": 1800 },
+    "proteinG": 110,
+    "stepsMin": 8000,
+    "plannedTrainingSessions": 6
+  },
+  "dailyLogs": [
+    { "date": "2026-03-06", "morningWeightKg": 62.3, "caloriesKcal": 1740, "proteinG": 109, "steps": 8200, "workout": { "status": "done", "type": "legs", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": false, "stepsMet": true } },
+    { "date": "2026-03-07", "morningWeightKg": 62.4, "caloriesKcal": 1640, "proteinG": 121, "steps": 8100, "workout": { "status": "rest", "type": "rest", "completed": false }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": true } },
+    { "date": "2026-03-08", "morningWeightKg": 62.3, "caloriesKcal": 1750, "proteinG": 114, "steps": 7900, "workout": { "status": "done", "type": "push", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": false } },
+    { "date": "2026-03-09", "morningWeightKg": 62.2, "caloriesKcal": 1680, "proteinG": 117, "steps": 8800, "workout": { "status": "done", "type": "pull", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": true } },
+    { "date": "2026-03-10", "morningWeightKg": 62.2, "caloriesKcal": 1790, "proteinG": 111, "steps": 8600, "workout": { "status": "done", "type": "legs", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": true } },
+    { "date": "2026-03-11", "morningWeightKg": 62.1, "caloriesKcal": 1715, "proteinG": 119, "steps": 9300, "workout": { "status": "done", "type": "push", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": true } },
+    { "date": "2026-03-12", "morningWeightKg": 62.0, "caloriesKcal": 1670, "proteinG": 116, "steps": 8400, "workout": { "status": "done", "type": "pull", "completed": true }, "adherence": { "calorieInRange": true, "proteinMet": true, "stepsMet": true } }
+  ],
+  "kpis": {
+    "weightTrendKgPerWeek": -0.43,
+    "adherencePct": 87.5,
+    "avgProteinG": 113.5,
+    "avgSteps": 8525,
+    "trainingCompletionPct": 100
+  }
+}

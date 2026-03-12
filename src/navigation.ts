@@ -21,8 +21,12 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Connected Systems',
-    items: [{ label: 'Integrations', path: '/integrations' }],
+    label: 'Master Dashboard',
+    items: [
+      { label: 'Expense', path: '/expense' },
+      { label: 'Fitness', path: '/fitness' },
+      { label: 'Integrations', path: '/integrations' },
+    ],
   },
   {
     label: 'Admin',

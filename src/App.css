@@ -674,6 +674,73 @@ select:hover {
   flex-wrap: wrap;
 }
 
+.mc-shell-context {
+  padding-top: var(--sp-3);
+  padding-bottom: var(--sp-3);
+}
+
+.module-switcher {
+  display: inline-flex;
+  gap: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 4px;
+  background: var(--panel-soft);
+}
+
+.module-pill {
+  min-height: 28px;
+  border-radius: var(--r-pill);
+  text-decoration: none;
+  color: var(--muted);
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.module-pill.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent-strong) 24%, var(--border));
+}
+
+.spark-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
+  gap: var(--sp-2);
+  align-items: end;
+}
+
+.spark-bar-wrap {
+  display: grid;
+  gap: var(--sp-1);
+  justify-items: center;
+}
+
+.spark-bar {
+  width: 100%;
+  border-radius: var(--r-xs) var(--r-xs) 2px 2px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent-strong) 80%, transparent), var(--accent-soft));
+  border: 1px solid color-mix(in oklab, var(--accent-strong) 20%, var(--border));
+}
+
+.spark-bar-wrap span {
+  color: var(--muted-2);
+  font-size: var(--fs-11);
+}
+
+.category-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  background: var(--panel-soft);
+}
+
 .mc-sticky-mini-header {
   position: sticky;
   top: 62px;

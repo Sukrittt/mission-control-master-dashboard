@@ -8,14 +8,19 @@ import { navGroups } from './navigation'
 import { ActivityPage } from './pages/ActivityPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DepartmentDetailPage, DepartmentsPage } from './pages/DepartmentsPage'
+import { ExpensePage } from './pages/ExpensePage'
+import { FitnessPage } from './pages/FitnessPage'
 import { IntegrationsPage } from './pages/IntegrationsPage'
 import { LearningsPage } from './pages/LearningsPage'
 import { RisksPage } from './pages/RisksPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { ModuleSwitcher } from './components/ModuleSwitcher'
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/': { title: 'Overview', subtitle: 'Cross-team pulse and mission health' },
   '/departments': { title: 'Departments', subtitle: 'Ownership, updates, and execution status' },
+  '/expense': { title: 'Expense Dashboard', subtitle: 'Run-rate, category pressure, and cashflow guardrails' },
+  '/fitness': { title: 'Fitness Dashboard', subtitle: 'Body metrics, adherence, and training execution' },
   '/risks': { title: 'Risks', subtitle: 'Severity queue, mitigation, and due windows' },
   '/learnings': { title: 'Learnings', subtitle: 'Operational insights and reusable discoveries' },
   '/activity': { title: 'Activity', subtitle: 'Unified timeline across update, risk, and learning events' },
@@ -50,6 +55,15 @@ function AppShell() {
 
     const updateTimes = data.dailyUpdates.map((item) => item.updatedAt).sort()
     return updateTimes.at(-1) ?? data.dateLabel
+  }, [data])
+
+  const moduleStatus = useMemo(() => {
+    if (!data) return []
+
+    return [
+      { label: 'Mission', tone: data.overallHealth },
+      ...data.externalModules.map((module) => ({ label: module.module === 'expense' ? 'Expense' : 'Fitness', tone: module.health })),
+    ]
   }, [data])
 
   useEffect(() => {
@@ -132,6 +146,19 @@ function AppShell() {
             </div>
           </header>
 
+          <section className="mc-shell-context mc-panel" aria-label="Master dashboard switcher and shared status">
+            <div className="department-title">
+              <ModuleSwitcher />
+              <div className="mc-summary-row">
+                {moduleStatus.map((module) => (
+                  <span key={module.label} className={`mc-chip mc-chip--${module.tone}`}>
+                    {module.label}: {module.tone.toUpperCase()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {loading ? (
             <section className="state-panel mc-panel" aria-live="polite">
               <h2>Loading dashboard…</h2>
@@ -150,6 +177,8 @@ function AppShell() {
               <Route path="/" element={<DashboardPage />} />
               <Route path="/departments" element={<DepartmentsPage />} />
               <Route path="/departments/:departmentId" element={<DepartmentDetailPage />} />
+              <Route path="/expense" element={<ExpensePage />} />
+              <Route path="/fitness" element={<FitnessPage />} />
               <Route path="/risks" element={<RisksPage />} />
               <Route path="/learnings" element={<LearningsPage />} />
               <Route path="/activity" element={<ActivityPage />} />
