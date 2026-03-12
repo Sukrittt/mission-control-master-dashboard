@@ -89,6 +89,7 @@ function AppShell() {
                       setMobileNavOpen(false)
                     }}
                   >
+                    <span className="sidebar-link-indicator" aria-hidden="true" />
                     <span>{item.label}</span>
                   </NavLink>
                 ))}

@@ -96,7 +96,7 @@ export function RisksPage() {
 
         <button
           type="button"
-          className="action-button"
+          className="action-button is-ghost"
           onClick={() => {
             setSeverityFilter('all')
             setDepartmentFilter('all')
@@ -118,10 +118,8 @@ export function RisksPage() {
       {filtered.length ? (
         <div className="mc-risk-table-wrap">
           <div className="mc-risk-list-head" aria-hidden="true">
-            <span>Severity</span>
-            <span>Owner</span>
-            <span>Due</span>
-            <span>State</span>
+            <span>Risk</span>
+            <span>Severity · State</span>
           </div>
           <ul className="risk-list spaced-list">
             {filtered.map((risk) => (

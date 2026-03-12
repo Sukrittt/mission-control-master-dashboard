@@ -16,5 +16,10 @@ const toneMap: Record<StatusTone, 'green' | 'amber' | 'red'> = {
 }
 
 export function StatusChip({ label, tone }: { label: string; tone: StatusTone }) {
-  return <span className={`mc-chip mc-chip--${toneMap[tone]}`}>{label}</span>
+  return (
+    <span className={`mc-chip mc-chip--${toneMap[tone]}`}>
+      <span className="mc-chip-dot" aria-hidden="true" />
+      {label}
+    </span>
+  )
 }

@@ -7,8 +7,8 @@ export function TimelineList({ items }: { items: ActivityItem[] }) {
         <li key={item.id}>
           <div className={`timeline-dot ${item.type}`} />
           <div>
-            <p className="risk-title">{item.title}</p>
-            <p className="risk-meta">
+            <p className="timeline-title">{item.title}</p>
+            <p className="timeline-meta">
               {item.departmentName} • {item.timestamp}
             </p>
             <p>{item.detail}</p>
