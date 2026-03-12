@@ -654,13 +654,22 @@ h4 {
 }
 
 .expense-toolbar {
-  align-items: center;
-  gap: var(--sp-4);
+  align-items: stretch;
+  gap: var(--sp-3);
 }
 
 .toolbar-group {
   display: grid;
   gap: var(--sp-2);
+  min-width: 240px;
+}
+
+.toolbar-group--period {
+  min-width: 320px;
+}
+
+.toolbar-group--category {
+  min-width: 300px;
 }
 
 .toolbar-label {
@@ -668,6 +677,12 @@ h4 {
   font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.toolbar-help {
+  color: var(--muted-2);
+  font-size: var(--fs-12);
+  line-height: 1.35;
 }
 
 .custom-dates {
@@ -686,6 +701,90 @@ h4 {
 .expense-toolbar select,
 .expense-toolbar input[type='date'] {
   min-height: 34px;
+}
+
+.category-dropdown {
+  position: relative;
+}
+
+.category-trigger {
+  justify-content: space-between;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.category-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(340px, 88vw);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--panel) 94%, transparent);
+  padding: var(--sp-2);
+  display: grid;
+  gap: var(--sp-2);
+  z-index: 8;
+  box-shadow: var(--shadow-2);
+}
+
+.category-menu input[type='search'] {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 0 var(--sp-2);
+}
+
+.category-menu-list {
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.category-option {
+  min-width: auto !important;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-13);
+  color: var(--text);
+}
+
+.category-option input {
+  min-width: auto;
+}
+
+.category-menu-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.kpi-toggle {
+  min-width: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-12) !important;
+  color: var(--muted);
+}
+
+.kpi-toggle input {
+  min-width: auto;
+}
+
+.expense-scope-row {
+  margin-top: calc(var(--sp-2) * -1);
+}
+
+.tiny-copy {
+  font-size: var(--fs-11);
 }
 
 select,
@@ -875,6 +974,20 @@ input[type='date']:hover {
 }
 
 .mc-insight-block p {
+  font-size: var(--fs-13);
+}
+
+.mc-insight-block--amber {
+  background: color-mix(in oklab, #f59e0b 12%, var(--panel-soft));
+  border-color: color-mix(in oklab, #f59e0b 26%, var(--border));
+}
+
+.insight-actions {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--text);
   font-size: var(--fs-13);
 }
 
