@@ -24,6 +24,31 @@ function toDateInputValue(value: Date): string {
   return value.toISOString().slice(0, 10)
 }
 
+type DecisionFooterModel = {
+  cause: string
+  risk: string
+  nextAction24h: string
+}
+
+function DecisionFooter({ model }: { model: DecisionFooterModel }) {
+  return (
+    <footer className="decision-footer" aria-label="Decision footer">
+      <p>
+        <span>Cause</span>
+        {model.cause}
+      </p>
+      <p>
+        <span>Risk if ignored</span>
+        {model.risk}
+      </p>
+      <p>
+        <span>Next action (24h)</span>
+        {model.nextAction24h}
+      </p>
+    </footer>
+  )
+}
+
 export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -188,6 +213,42 @@ export function ExpensePage() {
     (peak, row) => (row.value > peak.value ? row : peak),
     filteredTrend[0] ?? { date: '-', value: 0 },
   )
+
+  const pressureDecisionFooter: DecisionFooterModel = focusedCategoryRow
+    ? {
+        cause: `${focusedCategoryRow.category} contributes ${focusedCategoryShare}% share in the current category scope.`,
+        risk: `${focusedCategoryRow.category} can keep overall spend momentum elevated in ${periodLabel.toLowerCase()}.`,
+        nextAction24h: `Lock one hard spending limit for ${focusedCategoryRow.category} and apply it today.`,
+      }
+    : {
+        cause: selectedCategories.length ? 'Selected categories are concentrating discretionary spend.' : 'Top discretionary categories are still carrying most spend load.',
+        risk: 'Without a focused cap, run-rate pressure can keep compounding this cycle.',
+        nextAction24h: 'Set one temporary cap for discretionary categories before next checkout.',
+      }
+
+  const impactDecisionFooter: DecisionFooterModel = {
+    cause: `${periodLabel} total is ₹${filteredTotal.toFixed(0)} with ${periodDelta > 0 ? '+' : ''}${periodDelta.toFixed(1)}% momentum.`,
+    risk:
+      periodDelta > 0
+        ? 'Positive momentum can push this period beyond comfort range if unchecked.'
+        : 'Even flat momentum can hide overspend pockets without daily checks.',
+    nextAction24h:
+      periodDelta > 0
+        ? 'Review top 3 transactions from the latest window and cancel one non-essential spend.'
+        : 'Run a quick 24h ledger check and flag any repeat discretionary purchase.',
+  }
+
+  const actionDecisionFooter: DecisionFooterModel = focusedCategoryRow
+    ? {
+        cause: `Current action list is anchored to ${focusedCategoryRow.category} because it is the active pressure category.`,
+        risk: `If no action is executed today, ${focusedCategoryRow.category} leakage can repeat in the next spend cycle.`,
+        nextAction24h: `Complete the first action item for ${focusedCategoryRow.category} before end of day.`,
+      }
+    : {
+        cause: 'Action list is running in global mode because no single category is focused.',
+        risk: 'Global plans fail when they are not translated into one concrete action today.',
+        nextAction24h: 'Pick one action from the list and mark it done within 24h.',
+      }
 
   return (
     <section className="mc-content-grid expense-view">
@@ -416,10 +477,12 @@ export function ExpensePage() {
             <article className="mc-insight-block">
               <h4>Why pressure is rising</h4>
               <p>{cause}</p>
+              <DecisionFooter model={pressureDecisionFooter} />
             </article>
             <article className="mc-insight-block">
               <h4>Current impact</h4>
               <p>{impact}</p>
+              <DecisionFooter model={impactDecisionFooter} />
             </article>
             <article className="mc-insight-block">
               <h4>Do this in the next 48h</h4>
@@ -428,6 +491,7 @@ export function ExpensePage() {
                   <li key={step}>{step}</li>
                 ))}
               </ul>
+              <DecisionFooter model={actionDecisionFooter} />
             </article>
           </section>
 

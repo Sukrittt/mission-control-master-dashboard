@@ -1014,6 +1014,30 @@ input[type='date']:hover {
   font-size: var(--fs-13);
 }
 
+.decision-footer {
+  margin-top: var(--sp-2);
+  border-top: 1px solid var(--divider-soft);
+  padding-top: var(--sp-2);
+  display: grid;
+  gap: 8px;
+}
+
+.decision-footer p {
+  margin: 0;
+  font-size: var(--fs-12);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.decision-footer p span {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: var(--fs-10);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
 .expense-kpi {
   display: grid;
   gap: var(--sp-1);
