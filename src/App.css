@@ -1066,6 +1066,31 @@ input[type='date']:hover {
   border-color: color-mix(in oklab, var(--text) 16%, var(--border));
 }
 
+.fitness-view {
+  --accent: #6f86c9;
+  --accent-strong: #6078be;
+  --accent-soft: rgba(96, 120, 190, 0.12);
+}
+
+.fitness-split-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-2);
+}
+
+.fitness-stat {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--panel-soft);
+  padding: var(--sp-2);
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.fitness-stat strong {
+  font-size: var(--fs-14);
+}
+
 .mc-sticky-mini-header {
   position: sticky;
   top: 62px;
