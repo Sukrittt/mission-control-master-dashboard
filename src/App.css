@@ -761,6 +761,20 @@ h4 {
   gap: var(--sp-2);
   font-size: var(--fs-13);
   color: var(--text);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+}
+
+.category-option--all {
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--panel-soft) 80%, var(--panel));
+  font-weight: var(--fw-medium);
+}
+
+.category-option.is-selected {
+  border-color: color-mix(in oklab, var(--accent-strong) 42%, var(--border));
+  background: color-mix(in oklab, var(--accent-soft) 42%, var(--panel-soft));
 }
 
 .category-option input {
@@ -842,6 +856,12 @@ input[type='date']:hover {
 .action-button.is-active {
   border-color: color-mix(in oklab, var(--accent-strong) 42%, var(--border));
   background: var(--accent-soft);
+}
+
+.expense-view .action-button.is-active {
+  border-color: rgba(47, 52, 61, 0.55);
+  background: rgba(88, 96, 109, 0.18);
+  color: #1f2228;
 }
 
 .action-button.is-ghost {
@@ -965,7 +985,7 @@ input[type='date']:hover {
   gap: var(--sp-2);
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: var(--panel-soft);
   color: var(--text);
   text-align: left;
@@ -973,12 +993,27 @@ input[type='date']:hover {
 }
 
 .category-row:hover {
-  border-color: color-mix(in oklab, var(--accent-strong) 30%, var(--border));
+  border-color: color-mix(in oklab, var(--accent-strong) 35%, var(--border));
+  background: color-mix(in oklab, var(--accent-soft) 22%, var(--panel-soft));
 }
 
 .category-row.is-focused {
-  border-color: color-mix(in oklab, var(--accent-strong) 45%, var(--border));
-  background: color-mix(in oklab, var(--accent-soft) 42%, var(--panel-soft));
+  border-color: color-mix(in oklab, var(--accent-strong) 54%, var(--border));
+  background: color-mix(in oklab, var(--accent-soft) 50%, var(--panel-soft));
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--accent-strong) 65%, transparent);
+}
+
+.focus-change-cue {
+  font-size: var(--fs-12);
+  color: var(--expense-muted, var(--muted));
+  padding: 6px 8px;
+  border: 1px solid color-mix(in oklab, var(--accent-strong) 22%, var(--border));
+  border-radius: var(--r-sm);
+  background: color-mix(in oklab, var(--accent-soft) 25%, var(--panel-soft));
+}
+
+.focus-change-cue--inline {
+  grid-column: 1 / -1;
 }
 
 .mc-anomaly-wrap {
@@ -1102,21 +1137,59 @@ input[type='date']:hover {
 }
 
 .expense-view {
-  --accent: #6f7c91;
-  --accent-strong: #4a5463;
-  --accent-soft: rgba(74, 84, 99, 0.12);
+  --expense-bg: #f2f2f1;
+  --expense-panel: #fbfbfa;
+  --expense-panel-soft: #f3f3f1;
+  --expense-border: rgba(36, 37, 39, 0.16);
+  --expense-text: #1f2125;
+  --expense-muted: #575b64;
+  --accent: #6a717d;
+  --accent-strong: #3f4652;
+  --accent-soft: rgba(63, 70, 82, 0.14);
+
+  color: var(--expense-text);
+}
+
+.expense-view .mc-panel,
+.expense-view .mc-kpi-card,
+.expense-view .mc-action-module,
+.expense-view .mc-secondary-details,
+.expense-view .mc-anomaly-wrap,
+.expense-view .mc-filterbar,
+.expense-view .spark-bars,
+.expense-view .category-row,
+.expense-view .action-button,
+.expense-view input[type='date'],
+.expense-view input[type='search'] {
+  background: var(--expense-panel-soft);
+  border-color: var(--expense-border);
+}
+
+.expense-view .mc-panel,
+.expense-view .mc-kpi-card,
+.expense-view .mc-action-module,
+.expense-view .mc-secondary-details {
+  background: var(--expense-panel);
+}
+
+.expense-view .muted,
+.expense-view .risk-meta,
+.expense-view .mc-panel-header p,
+.expense-view .mc-action-module h4 {
+  color: var(--expense-muted);
 }
 
 .expense-scopebar {
   align-items: end;
-  gap: var(--sp-2);
-  background: color-mix(in oklab, var(--panel-soft) 94%, transparent);
+  gap: 6px;
+  background: var(--expense-panel-soft);
+  padding: 8px;
 }
 
 .scope-group {
   display: grid;
-  gap: 6px;
-  min-width: 220px;
+  gap: 4px;
+  min-width: 200px;
 }
 
 .scope-group--category {
@@ -1143,9 +1216,34 @@ input[type='date']:hover {
   font-size: var(--fs-12);
 }
 
+.expense-view .spark-bars {
+  background: #efefed;
+}
+
+.expense-view .spark-bars-inner {
+  min-height: clamp(260px, 38vh, 360px);
+  gap: 8px;
+}
+
+.expense-view .spark-reference-line {
+  border-top-color: rgba(36, 37, 39, 0.2);
+}
+
+.expense-view .spark-reference-line span {
+  color: #4a4f57;
+  font-weight: var(--fw-medium);
+  background: rgba(250, 250, 248, 0.92);
+}
+
 .expense-view .spark-bar {
-  background: linear-gradient(180deg, color-mix(in oklab, var(--text) 24%, transparent), color-mix(in oklab, var(--panel-soft) 92%, transparent));
-  border-color: color-mix(in oklab, var(--text) 18%, var(--border));
+  background: linear-gradient(180deg, #2f3641, #5c6471 62%, #8c94a3);
+  border-color: rgba(28, 31, 37, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.expense-view .spark-bar-wrap span {
+  color: #4e535c;
+  font-weight: var(--fw-medium);
 }
 
 .mc-action-modules {
@@ -1172,6 +1270,29 @@ input[type='date']:hover {
 
 .mc-action-module p {
   font-size: var(--fs-13);
+}
+
+.expense-view .mc-main-panels {
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  gap: 10px;
+}
+
+.expense-view .mc-panel {
+  gap: 10px;
+  padding: 12px;
+}
+
+.expense-view .spaced-list {
+  gap: 6px;
+}
+
+.expense-view .mc-secondary-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 8px;
+}
+
+.expense-view .tags {
+  align-content: start;
 }
 
 .mc-secondary-details {

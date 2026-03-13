@@ -48,6 +48,18 @@ export function ExpensePage() {
   const [customEnd, setCustomEnd] = useState<string>(toDateInputValue(latestDate))
 
   const categoryOptions = useMemo(() => panel.topCategories.map((category) => category.category), [])
+  const allCategoriesSelected = selectedCategories.length === 0
+
+  function selectAllCategories() {
+    setSelectedCategories([])
+  }
+
+  function toggleCategory(category: string) {
+    setSelectedCategories((prev) => {
+      if (prev.includes(category)) return prev.filter((item) => item !== category)
+      return [...prev, category]
+    })
+  }
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -138,6 +150,10 @@ export function ExpensePage() {
     ? focusedCategory
     : filteredCategories[0]?.category ?? null
   const focusedCategoryRow = filteredCategories.find((row) => row.category === effectiveFocusedCategory) ?? filteredCategories[0]
+
+  const focusChangeCue = focusedCategoryRow
+    ? `Now focused: ${focusedCategoryRow.category} (${focusedCategoryRow.sharePct}% share, ₹${focusedCategoryRow.amountInr.toFixed(0)}). Action cards updated.`
+    : 'No category data in current filter'
 
   const peakPoint = filteredTrend.reduce((peak, row) => (row.value > peak.value ? row : peak), filteredTrend[0] ?? { date: '-', value: 0 })
 
@@ -239,20 +255,16 @@ export function ExpensePage() {
                 aria-label="Search category"
               />
               <div className="category-menu-list">
+                <label className="category-option category-option--all">
+                  <input type="checkbox" checked={allCategoriesSelected} onChange={selectAllCategories} />
+                  <span>All categories</span>
+                </label>
                 {visibleCategoryOptions.length ? (
                   visibleCategoryOptions.map((category) => {
                     const selected = selectedCategories.includes(category)
                     return (
-                      <label key={category} className="category-option">
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() =>
-                            setSelectedCategories((prev) =>
-                              prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category],
-                            )
-                          }
-                        />
+                      <label key={category} className={`category-option ${selected ? 'is-selected' : ''}`}>
+                        <input type="checkbox" checked={selected} onChange={() => toggleCategory(category)} />
                         <span>{category}</span>
                       </label>
                     )
@@ -263,8 +275,8 @@ export function ExpensePage() {
               </div>
               <div className="category-menu-actions">
                 {selectedCategories.length ? (
-                  <button type="button" className="action-button is-ghost" onClick={() => setSelectedCategories([])}>
-                    Clear
+                  <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
+                    All categories
                   </button>
                 ) : <span />}
                 <button type="button" className="action-button" onClick={() => setIsCategoryOpen(false)}>
@@ -330,6 +342,7 @@ export function ExpensePage() {
             <h3>Top pressure category</h3>
             <p>Tap a row to focus actions</p>
           </div>
+          <p className="focus-change-cue" aria-live="polite">{focusChangeCue}</p>
           <div className="spaced-list">
             {filteredCategories.map((category) => {
               const isFocused = focusedCategoryRow?.category === category.category
@@ -354,6 +367,7 @@ export function ExpensePage() {
       </section>
 
       <section className="mc-action-modules" aria-label="Action modules">
+        <p className="focus-change-cue focus-change-cue--inline">{focusChangeCue}</p>
         {actionModules.map((module) => (
           <article key={module.title} className="mc-action-module">
             <h4>{module.title}</h4>
