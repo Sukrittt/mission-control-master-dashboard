@@ -5,7 +5,8 @@ import { SparkBars } from '../components/SparkBars'
 import { toExpensePanelData } from '../services/expensePanelAdapter'
 
 type PeriodKey = '7d' | '30d' | 'mtd' | 'custom'
-type TrendView = 'weekly' | 'monthly'
+type TrendView = 'daily' | 'weekly' | 'monthly'
+type DrillFilter = { start: string; end: string; parentView: TrendView } | null
 
 const panel = toExpensePanelData(expenseSample)
 const CATEGORY_COLORS = ['#7aa2ff', '#4fd1c5', '#f59e8b', '#b794f4', '#f6c453', '#63b3ed', '#f472b6', '#34d399']
@@ -28,7 +29,7 @@ function toDateInputValue(value: Date): string {
 }
 
 function formatCurrency(value: number): string {
-  return `₹${value.toFixed(0)}`
+  return `₹${Math.round(value).toLocaleString('en-IN')}`
 }
 
 function weekKey(input: string): string {
@@ -38,6 +39,24 @@ function weekKey(input: string): string {
   const diffToMonday = (start.getDay() + 6) % 7
   start.setDate(start.getDate() - diffToMonday)
   return start.toISOString().slice(0, 10)
+}
+
+function monthKey(input: string): string {
+  return input.slice(0, 7)
+}
+
+function monthRangeFromKey(key: string): { start: string; end: string } {
+  const d = new Date(`${key}-01`)
+  const start = d.toISOString().slice(0, 10)
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
+  return { start, end }
+}
+
+function weekRangeFromKey(startIso: string): { start: string; end: string } {
+  const d = new Date(startIso)
+  const end = new Date(d)
+  end.setDate(d.getDate() + 6)
+  return { start: d.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) }
 }
 
 function weekRangeLabel(startIso: string): string {
@@ -54,6 +73,7 @@ function weekRangeLabel(startIso: string): string {
 export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [trendView, setTrendView] = useState<TrendView>('weekly')
+  const [drillFilter, setDrillFilter] = useState<DrillFilter>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
   const [categoryMenuPosition, setCategoryMenuPosition] = useState<{ top: number; left: number; minWidth: number } | null>(null)
@@ -114,8 +134,7 @@ export function ExpensePage() {
       if (!rect) return
       const horizontalPadding = 16
       const minWidth = rect.width
-      const maxLeft = Math.max(horizontalPadding, window.innerWidth - minWidth - horizontalPadding)
-      const left = Math.min(Math.max(horizontalPadding, rect.left), maxLeft)
+      const left = Math.max(horizontalPadding, rect.right - Math.max(minWidth, 270))
       setCategoryMenuPosition({
         top: rect.bottom + 6,
         left,
@@ -197,7 +216,16 @@ export function ExpensePage() {
   }, [filteredTrend])
 
   const trendSeries = useMemo(() => {
-    const source = filteredTrend.map((row) => ({ ...row, value: row.value * categoryScopeRatio }))
+    let source = filteredTrend.map((row) => ({ ...row, value: row.value * categoryScopeRatio }))
+
+    if (drillFilter) {
+      source = source.filter((row) => row.date >= drillFilter.start && row.date <= drillFilter.end)
+    }
+
+    if (trendView === 'daily') {
+      return source.map((row) => ({ date: row.date, value: row.value }))
+    }
+
     if (trendView === 'weekly') {
       const byWeek = new Map<string, number>()
       source.forEach((row) => {
@@ -218,7 +246,54 @@ export function ExpensePage() {
       date,
       value,
     }))
-  }, [categoryScopeRatio, filteredTrend, trendView])
+  }, [categoryScopeRatio, drillFilter, filteredTrend, trendView])
+
+  const trendKeys = useMemo(() => {
+    let source = filteredTrend
+    if (drillFilter) {
+      source = source.filter((row) => row.date >= drillFilter.start && row.date <= drillFilter.end)
+    }
+    if (trendView === 'daily') return source.map((row) => row.date)
+    if (trendView === 'weekly') {
+      const keys: string[] = []
+      const seen = new Set<string>()
+      source.forEach((row) => {
+        const k = weekKey(row.date)
+        if (!seen.has(k)) { seen.add(k); keys.push(k) }
+      })
+      return keys
+    }
+    const keys: string[] = []
+    const seen = new Set<string>()
+    source.forEach((row) => {
+      const k = monthKey(row.date)
+      if (!seen.has(k)) { seen.add(k); keys.push(k) }
+    })
+    return keys
+  }, [drillFilter, filteredTrend, trendView])
+
+  function handleBarClick(index: number) {
+    if (trendView === 'monthly') {
+      const key = trendKeys[index]
+      if (!key) return
+      const range = monthRangeFromKey(key)
+      setDrillFilter({ ...range, parentView: 'monthly' })
+      setTrendView('weekly')
+    } else if (trendView === 'weekly') {
+      const key = trendKeys[index]
+      if (!key) return
+      const range = weekRangeFromKey(key)
+      setDrillFilter({ ...range, parentView: 'weekly' })
+      setTrendView('daily')
+    }
+  }
+
+  function handleDrillBack() {
+    if (drillFilter) {
+      setTrendView(drillFilter.parentView)
+      setDrillFilter(null)
+    }
+  }
 
   const stalenessText = formatLastUpdated(panel.lastUpdated)
   const periodLabel = period === 'mtd' ? 'Month to date' : period === 'custom' ? 'Custom range' : period === '7d' ? 'Last 7 days' : 'Last 30 days'
@@ -274,7 +349,7 @@ export function ExpensePage() {
         top: `${menuPosition.top}px`,
         left: `${menuPosition.left}px`,
         minWidth: `${menuPosition.minWidth}px`,
-        display: isCategoryMenuVisible ? 'block' : 'none',
+        display: isCategoryMenuVisible ? 'grid' : 'none',
         pointerEvents: isCategoryMenuVisible ? 'auto' : 'none',
       }}
     >
@@ -411,23 +486,33 @@ export function ExpensePage() {
       <section className="expense-grid-xman">
         <article className="mc-panel expense-trend-panel">
           <div className="mc-panel-header">
-            <h3>Spending trend</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {drillFilter && (
+                <button type="button" className="action-button is-ghost" onClick={handleDrillBack}>
+                  ← Back
+                </button>
+              )}
+              <h3>Spending trend</h3>
+            </div>
             <div className="segmented-control trend-toggle">
-              <button type="button" className={`action-button ${trendView === 'weekly' ? 'is-active' : ''}`} onClick={() => setTrendView('weekly')}>
+              <button type="button" className={`action-button ${trendView === 'daily' ? 'is-active' : ''}`} onClick={() => { setTrendView('daily'); setDrillFilter(null) }}>
+                Daily
+              </button>
+              <button type="button" className={`action-button ${trendView === 'weekly' ? 'is-active' : ''}`} onClick={() => { setTrendView('weekly'); setDrillFilter(null) }}>
                 Weekly
               </button>
-              <button type="button" className={`action-button ${trendView === 'monthly' ? 'is-active' : ''}`} onClick={() => setTrendView('monthly')}>
+              <button type="button" className={`action-button ${trendView === 'monthly' ? 'is-active' : ''}`} onClick={() => { setTrendView('monthly'); setDrillFilter(null) }}>
                 Monthly
               </button>
             </div>
           </div>
-          <p className="muted">Each bar = total spend per {trendView === 'weekly' ? 'week' : 'month'} • {periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
-          <p className="muted">Bars normalized; labels show actual ₹.</p>
           <SparkBars
             data={trendSeries}
             size="expanded"
             formatValue={(value) => formatCurrency(value)}
             capOutliers
+            showReferenceLines
+            onBarClick={trendView !== 'daily' ? handleBarClick : undefined}
           />
         </article>
 

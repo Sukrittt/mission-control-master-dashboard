@@ -185,7 +185,7 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
     discretionarySharePct: round(discretionarySharePct),
     alerts: input.alerts,
     deepLinks: input.deepLinks,
-    miniTrend: input.dailySpend.slice(-10).map((row) => ({ date: row.date, value: row.amountInr })),
+    miniTrend: input.dailySpend.map((row) => ({ date: row.date, value: row.amountInr })),
     weeklyAnomalies: toWeeklyAnomalies(input.dailySpend).slice(0, 8),
     weeklyInsights: buildWeeklyInsights(input, avgDailyLast7Inr, trendPct),
     subscriptions: {

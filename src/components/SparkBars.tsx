@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 interface SparkBarsProps {
   data: Array<{ date: string; value: number }>
@@ -8,6 +8,7 @@ interface SparkBarsProps {
   capOutliers?: boolean
   outlierThreshold?: number
   outlierPercentile?: number
+  onBarClick?: (index: number) => void
 }
 
 export function SparkBars({
@@ -18,7 +19,10 @@ export function SparkBars({
   capOutliers = false,
   outlierThreshold = 1.6,
   outlierPercentile = 0.9,
+  onBarClick,
 }: SparkBarsProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
   const values = data.map((row) => row.value).filter((value) => Number.isFinite(value))
 
   const rawMin = values.length ? Math.min(...values, 0) : 0
@@ -76,6 +80,20 @@ export function SparkBars({
     return input
   }
 
+  function getDateRange(index: number): string {
+    const current = data[index]
+    if (!current) return ''
+    const next = data[index + 1]
+    if (next) {
+      const start = new Date(current.date)
+      const end = new Date(next.date)
+      end.setDate(end.getDate() - 1)
+      const fmt = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      return `${fmt(start)} – ${fmt(end)}`
+    }
+    return getLabel(current.date)
+  }
+
   return (
     <div className={`spark-bars spark-bars--${size}`} role="img" aria-label="Expense trend chart">
       <div className="spark-scale" aria-hidden="true">
@@ -98,23 +116,39 @@ export function SparkBars({
         </div>
       ) : null}
 
-      <div className="spark-bars-inner">
+      <div className="spark-bars-inner" onMouseLeave={() => setHoveredIndex(null)}>
         {data.map((row, index) => {
           const normalized = maxValue ? Math.max(0, Math.min(1, row.value / maxValue)) : 0
           const height = normalized * 100
-          const prev = data[index - 1]?.value ?? row.value
-          const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
+          const prev = data[index - 1]
+          const delta = prev ? row.value - prev.value : 0
+          const deltaPct = prev ? ((row.value - prev.value) / prev.value) * 100 : 0
           const isCurrent = index === data.length - 1
+          const isHovered = hoveredIndex === index
 
           return (
             <div
               key={`${row.date}-${index}`}
-              className={`spark-bar-wrap ${isCurrent ? 'is-current' : ''}`}
-              title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
+              className={`spark-bar-wrap ${isCurrent ? 'is-current' : ''} ${isHovered ? 'is-hovered' : ''} ${onBarClick ? 'is-clickable' : ''}`}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onClick={() => onBarClick?.(index)}
             >
-              <strong className="spark-bar-value">{formatValue(row.value)}</strong>
-              <div className="spark-bar" style={{ height: `${height}%` }} />
+              <div className="spark-bar-track">
+                <div className="spark-bar" style={{ height: `${height}%` }} />
+              </div>
               <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
+
+              {isHovered && (
+                <div className="spark-tooltip">
+                  <strong>{getDateRange(index)}</strong>
+                  <span>Total: {formatValue(row.value)}</span>
+                  {prev && (
+                    <span className={delta > 0 ? 'spark-tooltip-down' : 'spark-tooltip-up'}>
+                      vs previous: {delta > 0 ? '▲' : '▼'} {Math.abs(deltaPct).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
