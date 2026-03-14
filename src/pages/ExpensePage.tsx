@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import expenseSample from '../data/expensePanel.sample.json'
 import { SparkBars } from '../components/SparkBars'
 import { toExpensePanelData } from '../services/expensePanelAdapter'
@@ -55,6 +55,8 @@ export function ExpensePage() {
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [scopePulse, setScopePulse] = useState(0)
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
+  const categoryMenuRef = useRef<HTMLDivElement | null>(null)
 
   const latestDate = useMemo(() => {
     const last = panel.miniTrend.at(-1)?.date ?? panel.month
@@ -78,14 +80,29 @@ export function ExpensePage() {
     setScopePulse((value) => value + 1)
   }
 
-  function handleCategorySelectChange(event: ChangeEvent<HTMLSelectElement>) {
-    const selected = Array.from(event.target.selectedOptions)
-      .map((option) => option.value)
-      .filter((value) => value && value !== '__all__')
+  useEffect(() => {
+    if (!isCategoryMenuOpen) return
 
-    setSelectedCategories(selected)
-    setScopePulse((value) => value + 1)
-  }
+    function handleClickOutside(event: MouseEvent) {
+      if (!categoryMenuRef.current?.contains(event.target as Node)) {
+        setIsCategoryMenuOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsCategoryMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isCategoryMenuOpen])
 
   const filteredTrend = useMemo(() => {
     const rows = [...panel.miniTrend]
@@ -250,27 +267,58 @@ export function ExpensePage() {
           </div>
         ) : null}
 
-        <div className="scope-group scope-group--category">
+        <div className="scope-group scope-group--category" ref={categoryMenuRef}>
           <span className="toolbar-label">Category</span>
-          <select
-            multiple
-            className="category-multiselect"
-            value={selectedCategories}
-            onChange={handleCategorySelectChange}
-            aria-label="Category filter"
-          >
-            <option value="__all__">All categories</option>
-            {categoryOptions.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          {!allCategoriesSelected ? (
-            <button type="button" className="action-button is-ghost category-clear" onClick={selectAllCategories}>
-              Clear category filters
+          <div className="category-dropdown">
+            <button
+              type="button"
+              className="action-button category-trigger"
+              onClick={() => setIsCategoryMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={isCategoryMenuOpen}
+            >
+              <span>{categoryScopeLabel}</span>
+              <span aria-hidden="true">▾</span>
             </button>
-          ) : null}
+
+            {isCategoryMenuOpen ? (
+              <div className="category-menu" role="menu" aria-label="Category filter menu">
+                <div className="category-menu-list">
+                  <button
+                    type="button"
+                    className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
+                    onClick={selectAllCategories}
+                  >
+                    <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
+                    All categories
+                  </button>
+
+                  {categoryOptions.map((category) => {
+                    const isSelected = selectedCategories.includes(category)
+                    return (
+                      <button
+                        type="button"
+                        key={category}
+                        className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => toggleCategory(category)}
+                      >
+                        <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
+                        {category}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {!allCategoriesSelected ? (
+                  <div className="category-menu-actions">
+                    <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
+                      Clear category filters
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="scope-meta-inline" aria-label="Scope status">
@@ -323,7 +371,7 @@ export function ExpensePage() {
               </button>
             </div>
           </div>
-          <p className="muted">{periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
+          <p className="muted">Each bar = total spend per {trendView === 'weekly' ? 'week' : 'month'} • {periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
           <SparkBars data={trendSeries} size="expanded" showReferenceLines formatValue={(value) => formatCurrency(value)} />
         </article>
 

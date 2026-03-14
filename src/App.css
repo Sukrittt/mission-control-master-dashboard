@@ -1280,23 +1280,7 @@ input[type='date']:hover {
 
 .scope-group--category {
   position: relative;
-}
-
-.category-multiselect {
   min-width: 240px;
-  min-height: 96px;
-  padding: 6px;
-  background: var(--expense-panel);
-  border: 1px solid var(--expense-border);
-  color: var(--expense-text);
-}
-
-.category-multiselect option {
-  padding: 4px 6px;
-}
-
-.category-clear {
-  width: fit-content;
 }
 
 .scope-meta-inline {
@@ -1499,7 +1483,7 @@ input[type='date']:hover {
 }
 
 .subscription-accordion {
-  border-bottom: 1px solid var(--expense-border);
+  border-bottom: 0;
   padding: 0 0 6px;
 }
 

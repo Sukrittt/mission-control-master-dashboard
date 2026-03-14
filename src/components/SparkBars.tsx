@@ -47,9 +47,9 @@ export function SparkBars({
   const referenceLevels = useMemo(() => {
     if (!showReferenceLines) return []
     return [
-      { label: 'Clip max', value: domainMax },
-      { label: 'Avg', value: avg },
-      { label: 'Floor', value: domainMin },
+      { label: 'Max', value: domainMax },
+      { label: 'Average', value: avg },
+      { label: 'Min', value: domainMin },
     ]
   }, [avg, domainMax, domainMin, showReferenceLines])
 
@@ -110,8 +110,6 @@ export function SparkBars({
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
           const isCurrent = index === data.length - 1
-          const isClippedHigh = row.value > domainMax
-          const isNearFloor = row.value <= domainMin + spread * 0.02
 
           return (
             <div
@@ -120,9 +118,7 @@ export function SparkBars({
               title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
             >
               {isCurrent ? <strong className="spark-current-value">{formatValue(row.value)}</strong> : null}
-              {isClippedHigh ? <span className="spark-cap-marker" aria-hidden="true">▲</span> : null}
               <div className="spark-bar" style={{ height: `${height}%` }} />
-              {isNearFloor ? <span className="spark-floor-marker" aria-hidden="true">•</span> : null}
               <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
             </div>
           )
