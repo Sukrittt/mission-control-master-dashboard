@@ -86,13 +86,15 @@ export function SparkBars({
           const height = 16 + normalized * 84
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
+          const isCurrent = index === data.length - 1
 
           return (
             <div
               key={`${row.date}-${index}`}
-              className="spark-bar-wrap"
+              className={`spark-bar-wrap ${isCurrent ? 'is-current' : ''}`}
               title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
             >
+              {isCurrent ? <strong className="spark-current-value">{formatValue(row.value)}</strong> : null}
               <div className="spark-bar" style={{ height: `${height}%` }} />
               <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
             </div>

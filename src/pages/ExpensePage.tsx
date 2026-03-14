@@ -54,7 +54,6 @@ export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [focusedCategory, setFocusedCategory] = useState<string | null>(null)
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
   const [scopePulse, setScopePulse] = useState(0)
@@ -74,26 +73,11 @@ export function ExpensePage() {
 
   function selectAllCategories() {
     setSelectedCategories([])
-    setFocusedCategory(null)
     setScopePulse((value) => value + 1)
   }
 
   function toggleCategory(category: string) {
-    setSelectedCategories((prev) => {
-      const next = prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]
-      if (next.length === 1) {
-        setFocusedCategory(next[0])
-      } else if (!next.length || !next.includes(focusedCategory ?? '')) {
-        setFocusedCategory(null)
-      }
-      return next
-    })
-    setScopePulse((value) => value + 1)
-  }
-
-  function focusSingleCategory(category: string) {
-    setFocusedCategory(category)
-    setSelectedCategories([category])
+    setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]))
     setScopePulse((value) => value + 1)
   }
 
@@ -212,18 +196,17 @@ export function ExpensePage() {
   const peakPoint = trendSeries.reduce((peak, row) => (row.value > peak.value ? row : peak), trendSeries[0] ?? { date: '-', value: 0 })
 
   const subscriptionCategory = panel.topCategories.find((row) => row.category.toLowerCase().includes('subscription'))
-  const donutSegments = panel.topCategories.slice(0, 8)
+  const donutSegments = (selectedCategories.length ? filteredCategories : panel.topCategories).slice(0, 8)
   const donutGradient = useMemo(() => {
     if (!donutSegments.length) return 'conic-gradient(#3b3f47 0 100%)'
 
-    if (focusedCategory) {
-      const color = categoryColorMap.get(focusedCategory) ?? '#7aa2ff'
-      return `conic-gradient(${color} 0 100%)`
-    }
+    const total = donutSegments.reduce((sum, segment) => sum + segment.amountInr, 0)
+    if (!total) return 'conic-gradient(#3b3f47 0 100%)'
 
     let start = 0
     const slices = donutSegments.map((segment) => {
-      const next = start + segment.sharePct
+      const segmentPct = (segment.amountInr / total) * 100
+      const next = start + segmentPct
       const color = categoryColorMap.get(segment.category) ?? '#8f97a3'
       const slice = `${color} ${start}% ${Math.min(100, next)}%`
       start = next
@@ -233,7 +216,7 @@ export function ExpensePage() {
       slices.push(`#2f333a ${start}% 100%`)
     }
     return `conic-gradient(${slices.join(', ')})`
-  }, [categoryColorMap, donutSegments, focusedCategory])
+  }, [categoryColorMap, donutSegments])
 
   return (
     <section className="mc-content-grid expense-view">
@@ -285,7 +268,7 @@ export function ExpensePage() {
             aria-expanded={isCategoryOpen}
             aria-label="Category filter"
           >
-            {selectedCategories.length ? `${selectedCategories.length} selected` : 'All categories'}
+            {allCategoriesSelected ? 'All categories' : 'Filtered categories'}
             <span className="mc-chip">Scope</span>
           </button>
 
@@ -335,11 +318,11 @@ export function ExpensePage() {
 
         <div className="scope-chip-row" aria-label="Active filters">
           <span className="mc-chip">{periodLabel}</span>
-          <span className={`mc-chip ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
           <span className="mc-chip">{stalenessText}</span>
           <span className="mc-chip mc-chip--neutral">Scope: {allCategoriesSelected ? 'All categories' : selectedCategories.join(', ')}</span>
+          <span className={`mc-chip scope-status-chip ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
         </div>
-        <p className="scope-helper">Tip: click any category card to isolate it. Use “All categories” to reset global view.</p>
+        <p className="scope-helper">Tip: click category cards to multi-select. Use “All categories” to reset global view.</p>
       </section>
 
       <section className="mc-kpi-strip mc-kpi-strip--expense" aria-label="Expense KPIs">
@@ -420,8 +403,11 @@ export function ExpensePage() {
           <p className="subscription-amount">{formatCurrency(subscriptionCategory?.amountInr ?? 0)}</p>
 
           <div className="subscription-lists">
-            <div>
-              <h4>Active ({panel.subscriptions.active.length})</h4>
+            <details className="mc-accordion-item subscription-accordion" open>
+              <summary>
+                <h4>Active ({panel.subscriptions.active.length})</h4>
+                <span className="chevron" aria-hidden="true">▾</span>
+              </summary>
               <ul className="compact-bullets compact-bullets--tight">
                 {panel.subscriptions.active.map((sub) => (
                   <li key={`${sub.service}-${sub.status}`}>
@@ -429,9 +415,13 @@ export function ExpensePage() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div>
-              <h4>Cancelled ({panel.subscriptions.cancelled.length})</h4>
+            </details>
+
+            <details className="mc-accordion-item subscription-accordion">
+              <summary>
+                <h4>Cancelled ({panel.subscriptions.cancelled.length})</h4>
+                <span className="chevron" aria-hidden="true">▾</span>
+              </summary>
               {panel.subscriptions.cancelled.length ? (
                 <ul className="compact-bullets compact-bullets--tight">
                   {panel.subscriptions.cancelled.map((sub) => (
@@ -443,7 +433,7 @@ export function ExpensePage() {
               ) : (
                 <p className="muted">No cancelled subscriptions found.</p>
               )}
-            </div>
+            </details>
           </div>
         </article>
 
@@ -480,7 +470,7 @@ export function ExpensePage() {
             <div className="donut-wrap" aria-label="Category share donut" role="img">
               <div className="donut-chart" style={{ backgroundImage: donutGradient }} />
               <div className="donut-center">
-                <strong>{focusedCategory ?? (selectedCategories.length ? categoryScopeLabel : 'All categories')}</strong>
+                <strong>{selectedCategories.length ? categoryScopeLabel : 'All categories'}</strong>
                 <span>{formatCurrency(selectedCategoryTotal)}</span>
               </div>
             </div>
@@ -504,7 +494,7 @@ export function ExpensePage() {
                     type="button"
                     key={category.category}
                     className={`category-row category-card ${isFocused ? 'is-focused' : ''}`}
-                    onClick={() => focusSingleCategory(category.category)}
+                    onClick={() => toggleCategory(category.category)}
                   >
                     <div>
                       <p className="risk-title">

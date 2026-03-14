@@ -1273,6 +1273,10 @@ input[type='date']:hover {
   gap: var(--sp-2);
 }
 
+.scope-status-chip {
+  margin-left: auto;
+}
+
 .scope-helper {
   width: 100%;
   font-size: var(--fs-11);
@@ -1345,8 +1349,8 @@ input[type='date']:hover {
 }
 
 .expense-view .spark-bars {
-  background: #101318;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #0d1016;
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .expense-view .spark-bars-inner {
@@ -1355,28 +1359,40 @@ input[type='date']:hover {
 }
 
 .expense-view .spark-reference-line {
-  border-top-color: rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.3);
 }
 
 .expense-view .spark-reference-line span {
-  color: #d8deea;
-  font-weight: var(--fw-medium);
-  background: rgba(14, 17, 23, 0.96);
+  color: #eef3ff;
+  font-weight: var(--fw-semibold);
+  background: rgba(10, 14, 20, 0.95);
 }
 
 .expense-view .spark-bar {
-  background: linear-gradient(180deg, #f0f4fb 0%, #bec6d2 54%, #7c8696 100%);
-  border-color: rgba(255, 255, 255, 0.34);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, #f8fbff 0%, #d8e1ef 42%, #8f9db1 100%);
+  border-color: rgba(255, 255, 255, 0.44);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 0 0 1px rgba(20, 24, 31, 0.35);
+}
+
+.expense-view .spark-bar-wrap.is-current .spark-bar {
+  background: linear-gradient(180deg, #ffffff 0%, #eaf2ff 38%, #99aac5 100%);
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.spark-current-value {
+  font-size: var(--fs-11);
+  color: #f4f7ff;
+  line-height: 1;
 }
 
 .expense-view .spark-bar-wrap span {
-  color: #b7c0ce;
+  color: #cdd7e8;
   font-weight: var(--fw-medium);
 }
 
 .expense-view .spark-scale span {
-  color: #b7c0ce;
+  color: #d3dcee;
 }
 
 .category-card-grid {
@@ -1433,7 +1449,17 @@ input[type='date']:hover {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--expense-muted);
-  margin-bottom: 4px;
+  margin-bottom: 0;
+}
+
+.subscription-accordion {
+  background: var(--expense-panel-soft);
+  border-color: var(--expense-border);
+  padding: 8px;
+}
+
+.subscription-accordion summary {
+  min-height: 24px;
 }
 
 .compact-bullets {
@@ -1488,8 +1514,8 @@ input[type='date']:hover {
 
 .category-breakdown-grid {
   display: grid;
-  grid-template-columns: minmax(120px, 132px) minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 10px;
   align-items: start;
 }
 
