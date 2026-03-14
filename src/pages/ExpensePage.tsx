@@ -4,6 +4,7 @@ import { SparkBars } from '../components/SparkBars'
 import { toExpensePanelData } from '../services/expensePanelAdapter'
 
 type PeriodKey = '7d' | '30d' | 'mtd' | 'custom'
+type TrendView = 'weekly' | 'monthly'
 
 const panel = toExpensePanelData(expenseSample)
 
@@ -24,18 +25,36 @@ function toDateInputValue(value: Date): string {
   return value.toISOString().slice(0, 10)
 }
 
-type ActionModule = {
-  title: string
-  summary: string
-  cta: string
+function formatCurrency(value: number): string {
+  return `₹${value.toFixed(0)}`
+}
+
+function weekKey(input: string): string {
+  const date = new Date(input)
+  if (Number.isNaN(date.getTime())) return input
+  const start = new Date(date)
+  const diffToMonday = (start.getDay() + 6) % 7
+  start.setDate(start.getDate() - diffToMonday)
+  return start.toISOString().slice(0, 10)
+}
+
+function weekRangeLabel(startIso: string): string {
+  const start = new Date(startIso)
+  if (Number.isNaN(start.getTime())) return startIso
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+  return `${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}-${end.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+  })}`
 }
 
 export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
+  const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
-  const [focusedCategory, setFocusedCategory] = useState<string | null>(null)
   const categoryDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const latestDate = useMemo(() => {
@@ -102,16 +121,16 @@ export function ExpensePage() {
     })
   }, [customEnd, customStart, latestDate, period])
 
-  const filteredCategories = useMemo(() => {
-    if (!selectedCategories.length) return panel.topCategories.slice(0, 8)
-    return panel.topCategories.filter((row) => selectedCategories.includes(row.category)).slice(0, 8)
-  }, [selectedCategories])
-
   const visibleCategoryOptions = useMemo(() => {
     const query = categoryQuery.trim().toLowerCase()
     if (!query) return categoryOptions
     return categoryOptions.filter((category) => category.toLowerCase().includes(query))
   }, [categoryOptions, categoryQuery])
+
+  const filteredCategories = useMemo(() => {
+    if (!selectedCategories.length) return panel.topCategories
+    return panel.topCategories.filter((row) => selectedCategories.includes(row.category))
+  }, [selectedCategories])
 
   const categoryTotal = useMemo(() => panel.topCategories.reduce((sum, row) => sum + row.amountInr, 0), [])
 
@@ -137,58 +156,68 @@ export function ExpensePage() {
     return ((secondAvg - firstAvg) / firstAvg) * 100
   }, [filteredTrend])
 
-  const adjustedRunRate = panel.avgDailyLast7Inr * categoryScopeRatio
-  const selectedShare = Math.max(0, Math.min(100, Math.round(categoryScopeRatio * 100)))
-  const topCategory = filteredCategories[0] ?? panel.topCategories[0]
-  const topCategoryShare = topCategory?.sharePct ?? selectedShare
+  const trendSeries = useMemo(() => {
+    const source = filteredTrend.map((row) => ({ ...row, value: row.value * categoryScopeRatio }))
+    if (trendView === 'weekly') {
+      const byWeek = new Map<string, number>()
+      source.forEach((row) => {
+        const key = weekKey(row.date)
+        byWeek.set(key, (byWeek.get(key) ?? 0) + row.value)
+      })
+
+      return [...byWeek.entries()].map(([date, value]) => ({ date: weekRangeLabel(date), value }))
+    }
+
+    const byMonth = new Map<string, number>()
+    source.forEach((row) => {
+      const key = row.date.slice(0, 7)
+      byMonth.set(key, (byMonth.get(key) ?? 0) + row.value)
+    })
+
+    return [...byMonth.entries()].map(([date, value]) => ({
+      date,
+      value,
+    }))
+  }, [categoryScopeRatio, filteredTrend, trendView])
 
   const stalenessText = formatLastUpdated(panel.lastUpdated)
   const periodLabel = period === 'mtd' ? 'Month to date' : period === 'custom' ? 'Custom' : period === '7d' ? 'Last 7 days' : 'Last 30 days'
   const categoryScopeLabel = selectedCategories.length ? `${selectedCategories.length} selected` : 'All categories'
 
-  const effectiveFocusedCategory = filteredCategories.some((row) => row.category === focusedCategory)
-    ? focusedCategory
-    : filteredCategories[0]?.category ?? null
-  const focusedCategoryRow = filteredCategories.find((row) => row.category === effectiveFocusedCategory) ?? filteredCategories[0]
+  const topCategory = filteredCategories[0] ?? panel.topCategories[0]
+  const topCategoryShare = topCategory?.sharePct ?? 0
+  const adjustedRunRate = panel.avgDailyLast7Inr * categoryScopeRatio
 
-  const focusChangeCue = focusedCategoryRow
-    ? `Now focused: ${focusedCategoryRow.category} (${focusedCategoryRow.sharePct}% share, ₹${focusedCategoryRow.amountInr.toFixed(0)}). Action cards updated.`
-    : 'No category data in current filter'
+  const peakPoint = trendSeries.reduce((peak, row) => (row.value > peak.value ? row : peak), trendSeries[0] ?? { date: '-', value: 0 })
 
-  const peakPoint = filteredTrend.reduce((peak, row) => (row.value > peak.value ? row : peak), filteredTrend[0] ?? { date: '-', value: 0 })
-
-  const actionModules: ActionModule[] = [
-    {
-      title: 'Cause',
-      summary: focusedCategoryRow
-        ? `${focusedCategoryRow.category} is the top pressure category at ${focusedCategoryRow.sharePct}% share (₹${focusedCategoryRow.amountInr.toFixed(0)}).`
-        : 'A single category is still dominating discretionary spend this period.',
-      cta: 'Set temporary category cap',
-    },
-    {
-      title: 'Risk',
-      summary:
-        periodDelta > 0
-          ? `${periodLabel} momentum is +${periodDelta.toFixed(1)}%. If unchanged, end-of-period overshoot risk stays elevated.`
-          : `${periodLabel} is stable, but recurring category spikes can still create month-end drift.`,
-      cta: 'Review top 3 recent transactions',
-    },
-    {
-      title: 'Next action',
-      summary: `Run a 48h cooldown on non-essentials and keep daily spend under ₹${panel.dailySoftCapInr.toFixed(0)} until next check-in.`,
-      cta: 'Start 48h cooldown',
-    },
-  ]
+  const subscriptionCategory = panel.topCategories.find((row) => row.category.toLowerCase().includes('subscription'))
+  const donutSegments = filteredCategories.slice(0, 6)
+  const donutGradient = useMemo(() => {
+    if (!donutSegments.length) return 'conic-gradient(#3b3f47 0 100%)'
+    const palette = ['#8f97a3', '#6f7784', '#b0b6c0', '#595f6a', '#d2d7df', '#7e858f']
+    let start = 0
+    const slices = donutSegments.map((segment, index) => {
+      const next = start + segment.sharePct
+      const color = palette[index % palette.length]
+      const slice = `${color} ${start}% ${Math.min(100, next)}%`
+      start = next
+      return slice
+    })
+    if (start < 100) {
+      slices.push(`#2f333a ${start}% 100%`)
+    }
+    return `conic-gradient(${slices.join(', ')})`
+  }, [donutSegments])
 
   return (
     <section className="mc-content-grid expense-view">
       <section className="headline">
         <div>
           <h1>Expense Command Center</h1>
-          <p className="muted">{panel.month} • Decision-first premium view</p>
+          <p className="muted">{panel.month} • Premium dark control board</p>
         </div>
         <span className={`mc-chip mc-chip--${panel.runRateStatus === 'overshoot' ? 'red' : panel.runRateStatus === 'watch' ? 'amber' : 'green'}`}>
-          {panel.runRateStatus === 'overshoot' ? '[!] CAP BREACHED' : panel.runRateStatus === 'watch' ? '[~] WATCH' : '[OK] ON TRACK'}
+          {panel.runRateStatus === 'overshoot' ? 'CAP BREACHED' : panel.runRateStatus === 'watch' ? 'WATCH' : 'ON TRACK'}
         </span>
       </section>
 
@@ -197,22 +226,11 @@ export function ExpensePage() {
           <span className="toolbar-label">Period</span>
           <div className="mc-filter-chips" role="tablist" aria-label="Period presets">
             {(['7d', '30d', 'mtd'] as PeriodKey[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                className={`action-button ${period === key ? 'is-active' : ''}`}
-                onClick={() => setPeriod(key)}
-                aria-label={key === '7d' ? 'Last 7 days' : key === '30d' ? 'Last 30 days' : 'Month to date'}
-              >
+              <button key={key} type="button" className={`action-button ${period === key ? 'is-active' : ''}`} onClick={() => setPeriod(key)}>
                 {key.toUpperCase()}
               </button>
             ))}
-            <button
-              type="button"
-              className={`action-button ${period === 'custom' ? 'is-active' : ''}`}
-              onClick={() => setPeriod('custom')}
-              aria-label="Custom period"
-            >
+            <button type="button" className={`action-button ${period === 'custom' ? 'is-active' : ''}`} onClick={() => setPeriod('custom')}>
               Custom
             </button>
           </div>
@@ -278,7 +296,9 @@ export function ExpensePage() {
                   <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
                     All categories
                   </button>
-                ) : <span />}
+                ) : (
+                  <span />
+                )}
                 <button type="button" className="action-button" onClick={() => setIsCategoryOpen(false)}>
                   Done
                 </button>
@@ -290,128 +310,152 @@ export function ExpensePage() {
         <div className="scope-chip-row" aria-label="Active filters">
           <span className="mc-chip">{periodLabel}</span>
           <span className="mc-chip">{categoryScopeLabel}</span>
-          {selectedCategories.length ? (
-            <button type="button" className="action-button is-ghost" onClick={() => setSelectedCategories([])}>
-              Clear filters
-            </button>
-          ) : null}
+          <span className="mc-chip">{stalenessText}</span>
         </div>
       </section>
 
       <section className="mc-kpi-strip mc-kpi-strip--expense" aria-label="Expense KPIs">
         <article className="mc-kpi-card expense-kpi">
           <p>Total spend vs cap</p>
-          <strong className={panel.runRateStatus === 'overshoot' ? 'red' : ''}>₹{filteredTotal.toFixed(0)}</strong>
+          <strong className={panel.runRateStatus === 'overshoot' ? 'red' : ''}>{formatCurrency(filteredTotal)}</strong>
           <span className="kpi-delta">{periodDelta > 0 ? '+' : ''}{periodDelta.toFixed(1)}% vs previous slice</span>
-          <span className="muted">Cap ₹{panel.monthlySpendCapInr.toFixed(0)} • {stalenessText}</span>
+          <span className="muted">Cap {formatCurrency(panel.monthlySpendCapInr)}</span>
         </article>
 
         <article className="mc-kpi-card expense-kpi">
-          <p>Daily run rate vs soft cap</p>
-          <strong>₹{adjustedRunRate.toFixed(0)}/day</strong>
-          <span className="kpi-delta">Soft cap ₹{panel.dailySoftCapInr.toFixed(0)}/day</span>
-          <span className="muted">Scope follows period + category filters</span>
+          <p>Daily run rate</p>
+          <strong>{formatCurrency(adjustedRunRate)}/day</strong>
+          <span className="kpi-delta">Soft cap {formatCurrency(panel.dailySoftCapInr)}/day</span>
+          <span className="muted">Filtered by period + category</span>
         </article>
 
         <article className="mc-kpi-card expense-kpi">
-          <p>Top category share</p>
+          <p>Top category pressure</p>
           <strong>{topCategoryShare}%</strong>
-          <span className="kpi-delta">{topCategory?.category ?? 'Category'} pressure</span>
-          <span className="muted">{selectedCategories.length ? 'Filtered top category' : 'Global top category'}</span>
+          <span className="kpi-delta">{topCategory?.category ?? 'Category'}</span>
+          <span className="muted">Share of total spend</span>
+        </article>
+
+        <article className="mc-kpi-card expense-kpi">
+          <p>Dues receivable</p>
+          <strong>{formatCurrency(panel.duesReceivableInr)}</strong>
+          <span className="kpi-delta">Recovery buffer available</span>
+          <span className="muted">Use before discretionary spends</span>
         </article>
       </section>
 
-      <section className="mc-main-panels">
-        <article className="mc-panel">
+      <section className="expense-grid-xman">
+        <article className="mc-panel expense-trend-panel">
           <div className="mc-panel-header">
-            <h3>Daily spend trend</h3>
-            <p>{periodLabel} • peak {peakPoint.date} (₹{peakPoint.value.toFixed(0)})</p>
+            <h3>Spending trend</h3>
+            <div className="segmented-control trend-toggle">
+              <button type="button" className={`action-button ${trendView === 'weekly' ? 'is-active' : ''}`} onClick={() => setTrendView('weekly')}>
+                Weekly
+              </button>
+              <button type="button" className={`action-button ${trendView === 'monthly' ? 'is-active' : ''}`} onClick={() => setTrendView('monthly')}>
+                Monthly
+              </button>
+            </div>
           </div>
-          <SparkBars data={filteredTrend} size="expanded" showReferenceLines formatValue={(value) => `₹${value.toFixed(0)}`} />
+          <p className="muted">{periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
+          <SparkBars data={trendSeries} size="expanded" showReferenceLines formatValue={(value) => formatCurrency(value)} />
+        </article>
+
+        <article className="mc-panel expense-weekly-panel">
+          <div className="mc-panel-header">
+            <h3>Weekly anomalies</h3>
+            <p>Largest spend weeks first</p>
+          </div>
+          <table className="mc-compact-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th className="num">Spend</th>
+              </tr>
+            </thead>
+            <tbody>
+              {panel.weeklyAnomalies.slice(0, 4).map((week) => (
+                <tr key={week.key}>
+                  <td>{week.label}</td>
+                  <td className="num">{formatCurrency(week.totalInr)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="mc-panel expense-subscriptions-panel">
+          <div className="mc-panel-header">
+            <h3>Subscriptions</h3>
+            <p>Recurring drag</p>
+          </div>
+          <p className="subscription-amount">{formatCurrency(subscriptionCategory?.amountInr ?? 0)}</p>
+          <ul className="compact-bullets">
+            <li>Audit active monthly plans this weekend.</li>
+            <li>Cancel annual services due this cycle.</li>
+            <li>Protect streaming + AI tools, pause non-critical trials.</li>
+          </ul>
+        </article>
+
+        <article className="mc-panel expense-review-panel">
+          <div className="mc-panel-header">
+            <h3>Weekly review & insights</h3>
+            <p>Concise decision notes</p>
+          </div>
+          <div className="review-points">
+            <div>
+              <h4>What went wrong</h4>
+              <p>{panel.weeklyInsights.wentWrong}</p>
+            </div>
+            <div>
+              <h4>What to do next</h4>
+              <p>{panel.weeklyInsights.nextWeek}</p>
+            </div>
+          </div>
           <div className="mc-summary-row">
             {panel.alerts.slice(0, 2).map((alert) => (
               <span key={alert} className="mc-chip mc-chip--amber">
-                [!] {alert}
+                {alert}
               </span>
             ))}
           </div>
         </article>
 
-        <article className="mc-panel">
+        <article className="mc-panel expense-category-panel">
           <div className="mc-panel-header">
-            <h3>Top pressure category</h3>
-            <p>Tap a row to focus actions</p>
+            <h3>Category breakdown</h3>
+            <p>Donut + ranked list</p>
           </div>
-          <p className="focus-change-cue" aria-live="polite">{focusChangeCue}</p>
-          <div className="spaced-list">
-            {filteredCategories.map((category) => {
-              const isFocused = focusedCategoryRow?.category === category.category
-              return (
-                <button
-                  key={category.category}
-                  type="button"
-                  className={`category-row ${isFocused ? 'is-focused' : ''}`}
-                  onClick={() => setFocusedCategory(category.category)}
-                  aria-pressed={isFocused}
-                >
+          <div className="category-breakdown-grid">
+            <div className="donut-wrap" aria-label="Category share donut" role="img">
+              <div className="donut-chart" style={{ backgroundImage: donutGradient }} />
+              <div className="donut-center">
+                <strong>{selectedCategories.length ? categoryScopeLabel : 'All'}</strong>
+                <span>{formatCurrency(selectedCategoryTotal)}</span>
+              </div>
+            </div>
+            <div className="spaced-list">
+              {filteredCategories.slice(0, 6).map((category) => (
+                <div key={category.category} className="category-row static-row">
                   <div>
                     <p className="risk-title">{category.category}</p>
-                    <p className="risk-meta">₹{category.amountInr.toFixed(0)}</p>
+                    <p className="risk-meta">{formatCurrency(category.amountInr)}</p>
                   </div>
                   <span className="mc-chip">{category.sharePct}%</span>
-                </button>
-              )
-            })}
+                </div>
+              ))}
+            </div>
           </div>
         </article>
       </section>
 
-      <section className="mc-action-modules" aria-label="Action modules">
-        <p className="focus-change-cue focus-change-cue--inline">{focusChangeCue}</p>
-        {actionModules.map((module) => (
-          <article key={module.title} className="mc-action-module">
-            <h4>{module.title}</h4>
-            <p>{module.summary}</p>
-            <button type="button" className="action-button">
-              {module.cta}
-            </button>
-          </article>
+      <div className="tags">
+        {panel.deepLinks.map((link) => (
+          <a key={link.label} className="inline-link" href={link.url} target="_blank" rel="noreferrer">
+            {link.label}
+          </a>
         ))}
-      </section>
-
-      <details className="mc-secondary-details">
-        <summary>Secondary details</summary>
-
-        <div className="mc-secondary-grid">
-          <article className="mc-anomaly-wrap">
-            <h4>Weekly anomalies</h4>
-            <table className="mc-compact-table">
-              <thead>
-                <tr>
-                  <th>Week</th>
-                  <th className="num">Spend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {panel.weeklyAnomalies.map((week) => (
-                  <tr key={week.key}>
-                    <td>{week.label}</td>
-                    <td className="num">₹{week.totalInr.toFixed(0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </article>
-
-          <div className="tags">
-            {panel.deepLinks.map((link) => (
-              <a key={link.label} className="inline-link" href={link.url} target="_blank" rel="noreferrer">
-                {link.label}
-              </a>
-            ))}
-          </div>
-        </div>
-      </details>
+      </div>
     </section>
   )
 }

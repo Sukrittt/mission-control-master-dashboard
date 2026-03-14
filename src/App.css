@@ -1137,53 +1137,57 @@ input[type='date']:hover {
 }
 
 .expense-view {
-  --expense-bg: #f2f2f1;
-  --expense-panel: #fbfbfa;
-  --expense-panel-soft: #f3f3f1;
-  --expense-border: rgba(36, 37, 39, 0.16);
-  --expense-text: #1f2125;
-  --expense-muted: #575b64;
-  --accent: #6a717d;
-  --accent-strong: #3f4652;
-  --accent-soft: rgba(63, 70, 82, 0.14);
+  --expense-bg: #090a0d;
+  --expense-panel: #13161b;
+  --expense-panel-soft: #171b22;
+  --expense-border: rgba(255, 255, 255, 0.12);
+  --expense-text: #eceff5;
+  --expense-muted: #a7b0bf;
+  --accent: #8f97a3;
+  --accent-strong: #b5bdca;
+  --accent-soft: rgba(159, 170, 190, 0.18);
 
   color: var(--expense-text);
 }
 
-.expense-view .mc-panel,
-.expense-view .mc-kpi-card,
-.expense-view .mc-action-module,
-.expense-view .mc-secondary-details,
-.expense-view .mc-anomaly-wrap,
-.expense-view .mc-filterbar,
-.expense-view .spark-bars,
-.expense-view .category-row,
-.expense-view .action-button,
-.expense-view input[type='date'],
-.expense-view input[type='search'] {
-  background: var(--expense-panel-soft);
-  border-color: var(--expense-border);
+.expense-view .headline h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
 }
 
 .expense-view .mc-panel,
 .expense-view .mc-kpi-card,
-.expense-view .mc-action-module,
-.expense-view .mc-secondary-details {
+.expense-view .mc-filterbar,
+.expense-view .spark-bars,
+.expense-view .category-row,
+.expense-view .action-button,
+.expense-view .inline-link,
+.expense-view input[type='date'],
+.expense-view input[type='search'] {
   background: var(--expense-panel);
+  border-color: var(--expense-border);
 }
 
 .expense-view .muted,
 .expense-view .risk-meta,
 .expense-view .mc-panel-header p,
-.expense-view .mc-action-module h4 {
+.expense-view .toolbar-label,
+.expense-view .mc-compact-table thead th {
   color: var(--expense-muted);
+}
+
+.expense-view .action-button.is-active {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(196, 204, 219, 0.16);
+  color: #f4f6fa;
 }
 
 .expense-scopebar {
   align-items: end;
-  gap: 6px;
+  gap: 8px;
   background: var(--expense-panel-soft);
-  padding: 8px;
+  padding: 10px;
+  border-radius: var(--r-md);
 }
 
 .scope-group {
@@ -1204,91 +1208,185 @@ input[type='date']:hover {
 }
 
 .mc-kpi-strip--expense {
-  grid-template-columns: repeat(3, minmax(210px, 1fr));
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
 }
 
 .expense-kpi {
   display: grid;
   gap: 6px;
+  min-height: 112px;
+}
+
+.expense-kpi strong {
+  font-size: 1.55rem;
 }
 
 .expense-kpi .muted {
   font-size: var(--fs-12);
 }
 
+.expense-grid-xman {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr);
+  gap: 10px;
+}
+
+.expense-grid-xman .mc-panel {
+  gap: 10px;
+  padding: 12px;
+}
+
+.expense-trend-panel {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.expense-weekly-panel {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.expense-subscriptions-panel {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.expense-review-panel {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.expense-category-panel {
+  grid-column: 2;
+  grid-row: 3;
+}
+
 .expense-view .spark-bars {
-  background: #efefed;
+  background: #101318;
 }
 
 .expense-view .spark-bars-inner {
-  min-height: clamp(260px, 38vh, 360px);
+  min-height: clamp(250px, 36vh, 330px);
   gap: 8px;
 }
 
 .expense-view .spark-reference-line {
-  border-top-color: rgba(36, 37, 39, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.16);
 }
 
 .expense-view .spark-reference-line span {
-  color: #4a4f57;
+  color: #c7cfdb;
   font-weight: var(--fw-medium);
-  background: rgba(250, 250, 248, 0.92);
+  background: rgba(14, 17, 23, 0.9);
 }
 
 .expense-view .spark-bar {
-  background: linear-gradient(180deg, #2f3641, #5c6471 62%, #8c94a3);
-  border-color: rgba(28, 31, 37, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, #d4dae3, #949daa 68%, #66707f);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .expense-view .spark-bar-wrap span {
-  color: #4e535c;
+  color: #b7c0ce;
   font-weight: var(--fw-medium);
-}
-
-.mc-action-modules {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-2);
-}
-
-.mc-action-module {
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: color-mix(in oklab, var(--panel-soft) 95%, var(--panel));
-  padding: var(--sp-2);
-  display: grid;
-  gap: var(--sp-2);
-}
-
-.mc-action-module h4 {
-  text-transform: uppercase;
-  font-size: var(--fs-11);
-  letter-spacing: 0.06em;
-  color: var(--muted-2);
-}
-
-.mc-action-module p {
-  font-size: var(--fs-13);
-}
-
-.expense-view .mc-main-panels {
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
-  gap: 10px;
-}
-
-.expense-view .mc-panel {
-  gap: 10px;
-  padding: 12px;
 }
 
 .expense-view .spaced-list {
   gap: 6px;
 }
 
-.expense-view .mc-secondary-grid {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+.static-row {
+  cursor: default;
+}
+
+.static-row:hover {
+  border-color: var(--expense-border);
+  background: var(--expense-panel);
+}
+
+.trend-toggle .action-button {
+  min-height: 30px;
+}
+
+.subscription-amount {
+  font-size: 1.45rem;
+  font-weight: var(--fw-semibold);
+}
+
+.compact-bullets {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--expense-muted);
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-13);
+}
+
+.review-points {
+  display: grid;
   gap: 8px;
+}
+
+.review-points h4 {
+  font-size: var(--fs-11);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--expense-muted);
+  margin-bottom: 4px;
+}
+
+.review-points p {
+  font-size: var(--fs-13);
+  line-height: 1.45;
+}
+
+.category-breakdown-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 0 auto;
+}
+
+.donut-chart {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 1px solid var(--expense-border);
+}
+
+.donut-chart::after {
+  content: '';
+  position: absolute;
+  inset: 27px;
+  border-radius: 50%;
+  background: #11141a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 2px;
+  z-index: 1;
+}
+
+.donut-center strong {
+  font-size: var(--fs-12);
+}
+
+.donut-center span {
+  font-size: var(--fs-11);
+  color: var(--expense-muted);
 }
 
 .expense-view .tags {
@@ -1476,8 +1574,18 @@ summary:focus-visible,
 
 @media (max-width: 1279px) {
   .mc-main-panels,
-  .mc-main-panels--activity {
+  .mc-main-panels--activity,
+  .expense-grid-xman {
     grid-template-columns: 1fr;
+  }
+
+  .expense-trend-panel,
+  .expense-weekly-panel,
+  .expense-subscriptions-panel,
+  .expense-review-panel,
+  .expense-category-panel {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
@@ -1556,6 +1664,10 @@ summary:focus-visible,
 
   .mc-kpi-strip--expense,
   .mc-action-modules {
+    grid-template-columns: 1fr;
+  }
+
+  .category-breakdown-grid {
     grid-template-columns: 1fr;
   }
 
