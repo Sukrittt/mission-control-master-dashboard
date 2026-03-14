@@ -423,7 +423,12 @@ export function ExpensePage() {
           </div>
           <p className="muted">Each bar = total spend per {trendView === 'weekly' ? 'week' : 'month'} • {periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
           <p className="muted">Bars normalized; labels show actual ₹.</p>
-          <SparkBars data={trendSeries} size="expanded" formatValue={(value) => formatCurrency(value)} />
+          <SparkBars
+            data={trendSeries}
+            size="expanded"
+            formatValue={(value) => formatCurrency(value)}
+            capOutliers
+          />
         </article>
 
         <article className="mc-panel expense-weekly-panel">

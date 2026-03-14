@@ -5,6 +5,9 @@ interface SparkBarsProps {
   formatValue?: (value: number) => string
   size?: 'compact' | 'default' | 'expanded'
   showReferenceLines?: boolean
+  capOutliers?: boolean
+  outlierThreshold?: number
+  outlierPercentile?: number
 }
 
 export function SparkBars({
@@ -12,12 +15,25 @@ export function SparkBars({
   formatValue = (value) => `${value}`,
   size = 'default',
   showReferenceLines = false,
+  capOutliers = false,
+  outlierThreshold = 1.6,
+  outlierPercentile = 0.9,
 }: SparkBarsProps) {
-  const values = data.map((row) => row.value)
+  const values = data.map((row) => row.value).filter((value) => Number.isFinite(value))
 
-  const rawMin = Math.min(...values, 0)
-  const rawMax = Math.max(...values, 0)
-  const maxValue = Math.max(rawMax, 0)
+  const rawMin = values.length ? Math.min(...values, 0) : 0
+  const rawMax = values.length ? Math.max(...values, 0) : 0
+
+  const scaleMax = useMemo(() => {
+    if (!capOutliers || values.length < 3) return Math.max(rawMax, 0)
+    const sorted = [...values].sort((a, b) => a - b)
+    const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * outlierPercentile)))
+    const percentileValue = sorted[idx] ?? rawMax
+    if (!percentileValue) return Math.max(rawMax, 0)
+    return rawMax > percentileValue * outlierThreshold ? percentileValue : Math.max(rawMax, 0)
+  }, [capOutliers, outlierPercentile, outlierThreshold, rawMax, values])
+
+  const maxValue = Math.max(scaleMax, 0)
 
   const avg = useMemo(() => {
     if (!data.length) return 0
@@ -34,11 +50,11 @@ export function SparkBars({
   }, [avg, rawMax, rawMin, showReferenceLines])
 
   const yTicks = useMemo(() => {
-    const top = rawMax
-    const mid = rawMin + (rawMax - rawMin) / 2
+    const top = maxValue
+    const mid = rawMin + (maxValue - rawMin) / 2
     const low = rawMin
     return [top, mid, low]
-  }, [rawMax, rawMin])
+  }, [maxValue, rawMin])
 
   const labelEvery = size === 'expanded' ? 2 : size === 'default' ? 2 : 4
 
