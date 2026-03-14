@@ -15,6 +15,13 @@ export interface ExpensePanelContract {
   dailySpend: Array<{ date: string; amountInr: number }>
   alerts: string[]
   deepLinks: Array<{ label: string; url: string }>
+  subscriptions?: Array<{
+    service: string
+    amountInr: number
+    billingCycle: string
+    status: string
+    renewalOrEndMonth?: string
+  }>
 }
 
 export interface ExpensePanelData {
@@ -41,6 +48,10 @@ export interface ExpensePanelData {
   weeklyInsights: {
     wentWrong: string
     nextWeek: string
+  }
+  subscriptions: {
+    active: Array<{ service: string; amountInr: number; billingCycle: string; status: string; renewalOrEndMonth?: string }>
+    cancelled: Array<{ service: string; amountInr: number; billingCycle: string; status: string; renewalOrEndMonth?: string }>
   }
 }
 
@@ -148,6 +159,10 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
     ? (input.totals.discretionarySpendInr / input.totals.monthSpendInr) * 100
     : 0
 
+  const subscriptions = input.subscriptions ?? []
+  const activeSubscriptions = subscriptions.filter((item) => /^active/i.test(item.status))
+  const cancelledSubscriptions = subscriptions.filter((item) => /cancel/i.test(item.status))
+
   return {
     lastUpdated: input.meta.generatedAt,
     month: input.meta.month,
@@ -173,5 +188,9 @@ export function toExpensePanelData(input: ExpensePanelContract): ExpensePanelDat
     miniTrend: input.dailySpend.slice(-10).map((row) => ({ date: row.date, value: row.amountInr })),
     weeklyAnomalies: toWeeklyAnomalies(input.dailySpend).slice(0, 8),
     weeklyInsights: buildWeeklyInsights(input, avgDailyLast7Inr, trendPct),
+    subscriptions: {
+      active: activeSubscriptions,
+      cancelled: cancelledSubscriptions,
+    },
   }
 }

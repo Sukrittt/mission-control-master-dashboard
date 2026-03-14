@@ -14,14 +14,9 @@ export function SparkBars({
   showReferenceLines = false,
 }: SparkBarsProps) {
   const values = data.map((row) => row.value)
-  const sorted = [...values].sort((a, b) => a - b)
   const max = Math.max(...values, 1)
   const min = Math.min(...values, 0)
-  const q1Index = Math.max(0, Math.floor((sorted.length - 1) * 0.1))
-  const q9Index = Math.max(0, Math.floor((sorted.length - 1) * 0.9))
-  const robustMin = sorted[q1Index] ?? min
-  const robustMax = sorted[q9Index] ?? max
-  const robustSpread = Math.max(1, robustMax - robustMin)
+  const spread = Math.max(max - min, 1)
 
   const avg = useMemo(() => {
     if (!data.length) return 0
@@ -31,20 +26,51 @@ export function SparkBars({
   const referenceLevels = useMemo(() => {
     if (!showReferenceLines) return []
     return [
-      { label: 'Min', value: min },
-      { label: 'Avg', value: avg },
       { label: 'Max', value: max },
+      { label: 'Avg', value: avg },
+      { label: 'Min', value: min },
     ]
   }, [avg, max, min, showReferenceLines])
 
-  const labelEvery = size === 'expanded' ? 3 : size === 'default' ? 2 : 4
+  const yTicks = useMemo(() => {
+    const top = max
+    const mid = min + spread / 2
+    const low = min
+    return [top, mid, low]
+  }, [max, min, spread])
+
+  const labelEvery = size === 'expanded' ? 2 : size === 'default' ? 2 : 4
+
+  function getLabel(input: string): string {
+    if (/^\d{4}-\d{2}$/.test(input)) {
+      const d = new Date(`${input}-01`)
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-IN', { month: 'short' })
+      }
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+      const d = new Date(input)
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      }
+    }
+
+    return input
+  }
 
   return (
     <div className={`spark-bars spark-bars--${size}`} role="img" aria-label="Expense trend chart">
+      <div className="spark-scale" aria-hidden="true">
+        {yTicks.map((tick) => (
+          <span key={tick}>{formatValue(tick)}</span>
+        ))}
+      </div>
+
       {showReferenceLines ? (
         <div className="spark-reference-grid" aria-hidden="true">
           {referenceLevels.map((level) => {
-            const offset = robustSpread === 0 ? 50 : ((Math.max(robustMin, Math.min(robustMax, level.value)) - robustMin) / robustSpread) * 100
+            const offset = ((level.value - min) / spread) * 100
             return (
               <div key={level.label} className="spark-reference-line" style={{ bottom: `${offset}%` }}>
                 <span>{level.label}</span>
@@ -56,20 +82,19 @@ export function SparkBars({
 
       <div className="spark-bars-inner">
         {data.map((row, index) => {
-          const clamped = Math.max(robustMin, Math.min(robustMax, row.value))
-          const normalized = robustSpread === 0 ? 0.5 : (clamped - robustMin) / robustSpread
-          const height = 28 + normalized * 72
+          const normalized = (row.value - min) / spread
+          const height = 16 + normalized * 84
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
 
           return (
             <div
-              key={row.date}
+              key={`${row.date}-${index}`}
               className="spark-bar-wrap"
               title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
             >
               <div className="spark-bar" style={{ height: `${height}%` }} />
-              <span>{index % labelEvery === 0 || index === data.length - 1 ? row.date.slice(5) : ''}</span>
+              <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
             </div>
           )
         })}

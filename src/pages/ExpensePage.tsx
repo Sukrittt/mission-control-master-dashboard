@@ -7,6 +7,7 @@ type PeriodKey = '7d' | '30d' | 'mtd' | 'custom'
 type TrendView = 'weekly' | 'monthly'
 
 const panel = toExpensePanelData(expenseSample)
+const CATEGORY_COLORS = ['#7aa2ff', '#4fd1c5', '#f59e8b', '#b794f4', '#f6c453', '#63b3ed', '#f472b6', '#34d399']
 
 function formatLastUpdated(value: string): string {
   const date = new Date(value)
@@ -53,6 +54,7 @@ export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [focusedCategory, setFocusedCategory] = useState<string | null>(null)
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
   const [scopePulse, setScopePulse] = useState(0)
@@ -72,14 +74,26 @@ export function ExpensePage() {
 
   function selectAllCategories() {
     setSelectedCategories([])
+    setFocusedCategory(null)
     setScopePulse((value) => value + 1)
   }
 
   function toggleCategory(category: string) {
     setSelectedCategories((prev) => {
       const next = prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]
+      if (next.length === 1) {
+        setFocusedCategory(next[0])
+      } else if (!next.length || !next.includes(focusedCategory ?? '')) {
+        setFocusedCategory(null)
+      }
       return next
     })
+    setScopePulse((value) => value + 1)
+  }
+
+  function focusSingleCategory(category: string) {
+    setFocusedCategory(category)
+    setSelectedCategories([category])
     setScopePulse((value) => value + 1)
   }
 
@@ -134,6 +148,10 @@ export function ExpensePage() {
     if (!selectedCategories.length) return panel.topCategories
     return panel.topCategories.filter((row) => selectedCategories.includes(row.category))
   }, [selectedCategories])
+
+  const categoryColorMap = useMemo(() => {
+    return new Map(panel.topCategories.map((category, index) => [category.category, CATEGORY_COLORS[index % CATEGORY_COLORS.length]]))
+  }, [])
 
   const categoryTotal = useMemo(() => panel.topCategories.reduce((sum, row) => sum + row.amountInr, 0), [])
 
@@ -194,14 +212,19 @@ export function ExpensePage() {
   const peakPoint = trendSeries.reduce((peak, row) => (row.value > peak.value ? row : peak), trendSeries[0] ?? { date: '-', value: 0 })
 
   const subscriptionCategory = panel.topCategories.find((row) => row.category.toLowerCase().includes('subscription'))
-  const donutSegments = filteredCategories.slice(0, 6)
+  const donutSegments = panel.topCategories.slice(0, 8)
   const donutGradient = useMemo(() => {
     if (!donutSegments.length) return 'conic-gradient(#3b3f47 0 100%)'
-    const palette = ['#8f97a3', '#6f7784', '#b0b6c0', '#595f6a', '#d2d7df', '#7e858f']
+
+    if (focusedCategory) {
+      const color = categoryColorMap.get(focusedCategory) ?? '#7aa2ff'
+      return `conic-gradient(${color} 0 100%)`
+    }
+
     let start = 0
-    const slices = donutSegments.map((segment, index) => {
+    const slices = donutSegments.map((segment) => {
       const next = start + segment.sharePct
-      const color = palette[index % palette.length]
+      const color = categoryColorMap.get(segment.category) ?? '#8f97a3'
       const slice = `${color} ${start}% ${Math.min(100, next)}%`
       start = next
       return slice
@@ -210,7 +233,7 @@ export function ExpensePage() {
       slices.push(`#2f333a ${start}% 100%`)
     }
     return `conic-gradient(${slices.join(', ')})`
-  }, [donutSegments])
+  }, [categoryColorMap, donutSegments, focusedCategory])
 
   return (
     <section className="mc-content-grid expense-view">
@@ -314,8 +337,9 @@ export function ExpensePage() {
           <span className="mc-chip">{periodLabel}</span>
           <span className={`mc-chip ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
           <span className="mc-chip">{stalenessText}</span>
-          {allCategoriesSelected ? <span className="mc-chip mc-chip--neutral">Global scope active</span> : null}
+          <span className="mc-chip mc-chip--neutral">Scope: {allCategoriesSelected ? 'All categories' : selectedCategories.join(', ')}</span>
         </div>
+        <p className="scope-helper">Tip: click any category card to isolate it. Use “All categories” to reset global view.</p>
       </section>
 
       <section className="mc-kpi-strip mc-kpi-strip--expense" aria-label="Expense KPIs">
@@ -394,11 +418,33 @@ export function ExpensePage() {
             <p>Recurring drag</p>
           </div>
           <p className="subscription-amount">{formatCurrency(subscriptionCategory?.amountInr ?? 0)}</p>
-          <ul className="compact-bullets">
-            <li>Audit active monthly plans this weekend.</li>
-            <li>Cancel annual services due this cycle.</li>
-            <li>Protect streaming + AI tools, pause non-critical trials.</li>
-          </ul>
+
+          <div className="subscription-lists">
+            <div>
+              <h4>Active ({panel.subscriptions.active.length})</h4>
+              <ul className="compact-bullets compact-bullets--tight">
+                {panel.subscriptions.active.map((sub) => (
+                  <li key={`${sub.service}-${sub.status}`}>
+                    <strong>{sub.service}</strong> · {sub.billingCycle} · {formatCurrency(sub.amountInr)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4>Cancelled ({panel.subscriptions.cancelled.length})</h4>
+              {panel.subscriptions.cancelled.length ? (
+                <ul className="compact-bullets compact-bullets--tight">
+                  {panel.subscriptions.cancelled.map((sub) => (
+                    <li key={`${sub.service}-${sub.status}`}>
+                      <strong>{sub.service}</strong> · {sub.status} · {sub.renewalOrEndMonth ?? 'n/a'}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">No cancelled subscriptions found.</p>
+              )}
+            </div>
+          </div>
         </article>
 
         <article className="mc-panel expense-review-panel">
@@ -434,20 +480,43 @@ export function ExpensePage() {
             <div className="donut-wrap" aria-label="Category share donut" role="img">
               <div className="donut-chart" style={{ backgroundImage: donutGradient }} />
               <div className="donut-center">
-                <strong>{selectedCategories.length ? categoryScopeLabel : 'All'}</strong>
+                <strong>{focusedCategory ?? (selectedCategories.length ? categoryScopeLabel : 'All categories')}</strong>
                 <span>{formatCurrency(selectedCategoryTotal)}</span>
               </div>
             </div>
             <div className="category-card-grid">
-              {filteredCategories.slice(0, 6).map((category) => (
-                <div key={category.category} className="category-row static-row category-card">
-                  <div>
-                    <p className="risk-title">{category.category}</p>
-                    <p className="risk-meta">{formatCurrency(category.amountInr)}</p>
-                  </div>
-                  <span className="mc-chip">{category.sharePct}%</span>
+              <button
+                type="button"
+                className={`category-row category-card ${allCategoriesSelected ? 'is-focused' : ''}`}
+                onClick={selectAllCategories}
+              >
+                <div>
+                  <p className="risk-title">All categories</p>
+                  <p className="risk-meta">Reset to full dashboard scope</p>
                 </div>
-              ))}
+                <span className="mc-chip mc-chip--neutral">{allCategoriesSelected ? 'Active' : 'Reset'}</span>
+              </button>
+
+              {panel.topCategories.slice(0, 8).map((category) => {
+                const isFocused = selectedCategories.includes(category.category)
+                return (
+                  <button
+                    type="button"
+                    key={category.category}
+                    className={`category-row category-card ${isFocused ? 'is-focused' : ''}`}
+                    onClick={() => focusSingleCategory(category.category)}
+                  >
+                    <div>
+                      <p className="risk-title">
+                        <span className="category-dot" style={{ background: categoryColorMap.get(category.category) }} />
+                        {category.category}
+                      </p>
+                      <p className="risk-meta">{formatCurrency(category.amountInr)}</p>
+                    </div>
+                    <span className="mc-chip">{category.sharePct}%</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </article>

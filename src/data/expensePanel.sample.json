@@ -42,5 +42,13 @@
     { "label": "Open Expense Dashboard", "url": "../expense-dashboard/" },
     { "label": "Expenses CSV", "url": "../productivity/expenses.csv" },
     { "label": "Subscriptions CSV", "url": "../productivity/subscriptions.csv" }
+  ],
+  "subscriptions": [
+    { "service": "Spotify", "amountInr": 99, "billingCycle": "monthly", "status": "active" },
+    { "service": "Netflix", "amountInr": 199, "billingCycle": "monthly", "status": "active" },
+    { "service": "OpenAI Plus", "amountInr": 1999, "billingCycle": "monthly", "status": "active" },
+    { "service": "OpenAI Go", "amountInr": 399, "billingCycle": "monthly", "status": "active" },
+    { "service": "ElevenLabs", "amountInr": 899, "billingCycle": "monthly", "status": "cancelled", "renewalOrEndMonth": "2026-04" },
+    { "service": "Amazon Prime", "amountInr": 1499, "billingCycle": "yearly", "status": "cancelled", "renewalOrEndMonth": "2026-09" }
   ]
 }

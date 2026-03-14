@@ -925,7 +925,25 @@ input[type='date']:hover {
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--panel-soft);
-  padding: var(--sp-2);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) 48px;
+}
+
+.spark-scale {
+  position: absolute;
+  left: 8px;
+  top: var(--sp-2);
+  bottom: 28px;
+  width: 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.spark-scale span {
+  font-size: var(--fs-11);
+  color: var(--muted-2);
+  line-height: 1;
 }
 
 .spark-bars-inner {
@@ -1255,6 +1273,12 @@ input[type='date']:hover {
   gap: var(--sp-2);
 }
 
+.scope-helper {
+  width: 100%;
+  font-size: var(--fs-11);
+  color: var(--expense-muted, var(--muted-2));
+}
+
 .expense-scopebar .action-button,
 .expense-scopebar input[type='date'],
 .expense-scopebar input[type='search'] {
@@ -1351,21 +1375,29 @@ input[type='date']:hover {
   font-weight: var(--fw-medium);
 }
 
+.expense-view .spark-scale span {
+  color: #b7c0ce;
+}
+
 .category-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  align-content: start;
 }
 
 .category-card {
   min-height: 0;
-  padding: 6px 8px;
+  padding: 5px 7px;
   align-items: start;
 }
 
 .category-card .risk-title {
-  font-size: var(--fs-13);
+  font-size: var(--fs-12);
   margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .category-card .risk-meta {
@@ -1391,6 +1423,19 @@ input[type='date']:hover {
   font-weight: var(--fw-semibold);
 }
 
+.subscription-lists {
+  display: grid;
+  gap: 8px;
+}
+
+.subscription-lists h4 {
+  font-size: var(--fs-11);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--expense-muted);
+  margin-bottom: 4px;
+}
+
 .compact-bullets {
   margin: 0;
   padding-left: 16px;
@@ -1398,6 +1443,18 @@ input[type='date']:hover {
   display: grid;
   gap: 4px;
   font-size: var(--fs-13);
+}
+
+.compact-bullets--tight {
+  gap: 2px;
+  font-size: var(--fs-12);
+}
+
+.category-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .review-points {
@@ -1431,21 +1488,21 @@ input[type='date']:hover {
 
 .category-breakdown-grid {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: minmax(120px, 132px) minmax(0, 1fr);
   gap: 8px;
   align-items: start;
 }
 
 .donut-wrap {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 124px;
+  height: 124px;
   margin: 0 auto;
 }
 
 .donut-chart {
-  width: 132px;
-  height: 132px;
+  width: 124px;
+  height: 124px;
   border-radius: 50%;
   border: 1px solid var(--expense-border);
 }
@@ -1453,7 +1510,7 @@ input[type='date']:hover {
 .donut-chart::after {
   content: '';
   position: absolute;
-  inset: 27px;
+  inset: 24px;
   border-radius: 50%;
   background: #11141a;
   border: 1px solid rgba(255, 255, 255, 0.08);
