@@ -54,7 +54,6 @@ export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [scopePulse, setScopePulse] = useState(0)
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
   const categoryMenuRef = useRef<HTMLDivElement | null>(null)
 
@@ -72,12 +71,10 @@ export function ExpensePage() {
 
   function selectAllCategories() {
     setSelectedCategories([])
-    setScopePulse((value) => value + 1)
   }
 
   function toggleCategory(category: string) {
     setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]))
-    setScopePulse((value) => value + 1)
   }
 
   useEffect(() => {
@@ -267,64 +264,60 @@ export function ExpensePage() {
           </div>
         ) : null}
 
-        <div className="scope-group scope-group--category" ref={categoryMenuRef}>
-          <span className="toolbar-label">Category</span>
-          <div className="category-dropdown">
-            <button
-              type="button"
-              className="action-button category-trigger"
-              onClick={() => setIsCategoryMenuOpen((open) => !open)}
-              aria-haspopup="menu"
-              aria-expanded={isCategoryMenuOpen}
-            >
-              <span>{categoryScopeLabel}</span>
-              <span aria-hidden="true">▾</span>
-            </button>
-
-            {isCategoryMenuOpen ? (
-              <div className="category-menu" role="menu" aria-label="Category filter menu">
-                <div className="category-menu-list">
-                  <button
-                    type="button"
-                    className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
-                    onClick={selectAllCategories}
-                  >
-                    <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
-                    All categories
-                  </button>
-
-                  {categoryOptions.map((category) => {
-                    const isSelected = selectedCategories.includes(category)
-                    return (
-                      <button
-                        type="button"
-                        key={category}
-                        className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
-                        onClick={() => toggleCategory(category)}
-                      >
-                        <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
-                        {category}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {!allCategoriesSelected ? (
-                  <div className="category-menu-actions">
-                    <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
-                      Clear category filters
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
         <div className="scope-meta-inline" aria-label="Scope status">
           <span>{stalenessText}</span>
-          <span>Scope: {allCategoriesSelected ? 'All categories' : selectedCategories.join(', ')}</span>
-          <span className={`scope-inline-count ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
+          <span className="scope-inline-category" ref={categoryMenuRef}>
+            <div className="category-dropdown category-dropdown--inline">
+              <button
+                type="button"
+                className="action-button category-trigger"
+                onClick={() => setIsCategoryMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={isCategoryMenuOpen}
+              >
+                <span>{categoryScopeLabel}</span>
+                <span aria-hidden="true">▾</span>
+              </button>
+
+              {isCategoryMenuOpen ? (
+                <div className="category-menu" role="menu" aria-label="Category filter menu">
+                  <div className="category-menu-list">
+                    <button
+                      type="button"
+                      className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
+                      onClick={selectAllCategories}
+                    >
+                      <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
+                      All categories
+                    </button>
+
+                    {categoryOptions.map((category) => {
+                      const isSelected = selectedCategories.includes(category)
+                      return (
+                        <button
+                          type="button"
+                          key={category}
+                          className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => toggleCategory(category)}
+                        >
+                          <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
+                          {category}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {!allCategoriesSelected ? (
+                    <div className="category-menu-actions">
+                      <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
+                        Clear category filters
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </span>
         </div>
       </section>
 

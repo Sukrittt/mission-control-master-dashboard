@@ -27,7 +27,9 @@ export function SparkBars({
   const sortedValues = [...values].sort((a, b) => a - b)
 
   const rawMin = Math.min(...values, 0)
+  const rawMax = Math.max(...values, 0)
   const p10 = percentile(sortedValues, 0.1)
+  const p50 = percentile(sortedValues, 0.5)
   const p90 = percentile(sortedValues, 0.9)
 
   const robustMin = Math.min(rawMin, p10)
@@ -35,8 +37,12 @@ export function SparkBars({
   const paddedMin = Math.min(0, robustMin * 0.92)
   const paddedMax = robustMax * 1.08
 
-  const domainMin = Number.isFinite(paddedMin) ? paddedMin : 0
-  const domainMax = Number.isFinite(paddedMax) && paddedMax > domainMin ? paddedMax : domainMin + 1
+  const useLogScale = rawMax > 0 && rawMax / Math.max(p50 || rawMin || 1, 1) > 6
+  const transform = (value: number) => (useLogScale ? Math.log10(Math.max(0, value) + 1) : value)
+
+  const domainMin = Number.isFinite(paddedMin) ? transform(paddedMin) : 0
+  const domainMaxRaw = Number.isFinite(paddedMax) ? paddedMax : rawMax
+  const domainMax = transform(domainMaxRaw)
   const spread = Math.max(domainMax - domainMin, 1)
 
   const avg = useMemo(() => {
@@ -47,18 +53,18 @@ export function SparkBars({
   const referenceLevels = useMemo(() => {
     if (!showReferenceLines) return []
     return [
-      { label: 'Max', value: domainMax },
+      { label: 'Max', value: rawMax },
       { label: 'Average', value: avg },
-      { label: 'Min', value: domainMin },
+      { label: 'Min', value: rawMin },
     ]
-  }, [avg, domainMax, domainMin, showReferenceLines])
+  }, [avg, rawMax, rawMin, showReferenceLines])
 
   const yTicks = useMemo(() => {
-    const top = domainMax
-    const mid = domainMin + spread / 2
-    const low = domainMin
+    const top = rawMax
+    const mid = rawMin + (rawMax - rawMin) / 2
+    const low = rawMin
     return [top, mid, low]
-  }, [domainMax, domainMin, spread])
+  }, [rawMax, rawMin])
 
   const labelEvery = size === 'expanded' ? 2 : size === 'default' ? 2 : 4
 
@@ -91,7 +97,7 @@ export function SparkBars({
       {showReferenceLines ? (
         <div className="spark-reference-grid" aria-hidden="true">
           {referenceLevels.map((level) => {
-            const clipped = Math.max(domainMin, Math.min(domainMax, level.value))
+            const clipped = Math.max(domainMin, Math.min(domainMax, transform(level.value)))
             const offset = ((clipped - domainMin) / spread) * 100
             return (
               <div key={level.label} className="spark-reference-line" style={{ bottom: `${offset}%` }}>
@@ -104,7 +110,7 @@ export function SparkBars({
 
       <div className="spark-bars-inner">
         {data.map((row, index) => {
-          const clipped = Math.max(domainMin, Math.min(domainMax, row.value))
+          const clipped = Math.max(domainMin, Math.min(domainMax, transform(row.value)))
           const normalized = (clipped - domainMin) / spread
           const height = 20 + normalized * 80
           const prev = data[index - 1]?.value ?? row.value

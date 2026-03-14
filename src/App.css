@@ -725,6 +725,17 @@ h4 {
   z-index: 9;
 }
 
+.category-dropdown--inline .category-trigger {
+  min-width: 150px;
+  padding: 4px 8px;
+  font-size: var(--fs-12);
+}
+
+.category-dropdown--inline .category-menu {
+  right: 0;
+  left: auto;
+}
+
 .category-trigger {
   justify-content: space-between;
   width: 100%;
