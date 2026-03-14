@@ -1049,7 +1049,7 @@ input[type='date']:hover {
 .category-row.is-focused {
   border-color: color-mix(in oklab, var(--accent-strong) 54%, var(--border));
   background: color-mix(in oklab, var(--accent-soft) 50%, var(--panel-soft));
-  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--accent-strong) 65%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent-strong) 48%, transparent);
 }
 
 .focus-change-cue {
@@ -1282,6 +1282,23 @@ input[type='date']:hover {
   position: relative;
 }
 
+.category-multiselect {
+  min-width: 240px;
+  min-height: 96px;
+  padding: 6px;
+  background: var(--expense-panel);
+  border: 1px solid var(--expense-border);
+  color: var(--expense-text);
+}
+
+.category-multiselect option {
+  padding: 4px 6px;
+}
+
+.category-clear {
+  width: fit-content;
+}
+
 .scope-meta-inline {
   margin-left: auto;
   min-height: 34px;
@@ -1415,11 +1432,20 @@ input[type='date']:hover {
   color: #d3dcee;
 }
 
+.category-card-stack {
+  display: grid;
+  gap: 6px;
+}
+
 .category-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   align-content: start;
+}
+
+.category-card--all {
+  width: 100%;
 }
 
 .category-card {
@@ -1473,13 +1499,12 @@ input[type='date']:hover {
 }
 
 .subscription-accordion {
-  border-top: 1px solid var(--expense-border);
-  padding-top: 6px;
+  border-bottom: 1px solid var(--expense-border);
+  padding: 0 0 6px;
 }
 
 .subscription-accordion:last-child {
   border-bottom: 1px solid var(--expense-border);
-  padding-bottom: 6px;
 }
 
 .subscription-accordion summary {

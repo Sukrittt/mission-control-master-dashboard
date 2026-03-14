@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import expenseSample from '../data/expensePanel.sample.json'
 import { SparkBars } from '../components/SparkBars'
 import { toExpensePanelData } from '../services/expensePanelAdapter'
@@ -54,10 +54,7 @@ export function ExpensePage() {
   const [period, setPeriod] = useState<PeriodKey>('mtd')
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-  const [categoryQuery, setCategoryQuery] = useState('')
   const [scopePulse, setScopePulse] = useState(0)
-  const categoryDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const latestDate = useMemo(() => {
     const last = panel.miniTrend.at(-1)?.date ?? panel.month
@@ -81,16 +78,14 @@ export function ExpensePage() {
     setScopePulse((value) => value + 1)
   }
 
-  useEffect(() => {
-    function onPointerDown(event: MouseEvent) {
-      if (!categoryDropdownRef.current?.contains(event.target as Node)) {
-        setIsCategoryOpen(false)
-      }
-    }
+  function handleCategorySelectChange(event: ChangeEvent<HTMLSelectElement>) {
+    const selected = Array.from(event.target.selectedOptions)
+      .map((option) => option.value)
+      .filter((value) => value && value !== '__all__')
 
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [])
+    setSelectedCategories(selected)
+    setScopePulse((value) => value + 1)
+  }
 
   const filteredTrend = useMemo(() => {
     const rows = [...panel.miniTrend]
@@ -121,12 +116,6 @@ export function ExpensePage() {
       return !Number.isNaN(date.getTime()) && date >= start && date <= end
     })
   }, [customEnd, customStart, latestDate, period])
-
-  const visibleCategoryOptions = useMemo(() => {
-    const query = categoryQuery.trim().toLowerCase()
-    if (!query) return categoryOptions
-    return categoryOptions.filter((category) => category.toLowerCase().includes(query))
-  }, [categoryOptions, categoryQuery])
 
   const filteredCategories = useMemo(() => {
     if (!selectedCategories.length) return panel.topCategories
@@ -186,7 +175,7 @@ export function ExpensePage() {
   }, [categoryScopeRatio, filteredTrend, trendView])
 
   const stalenessText = formatLastUpdated(panel.lastUpdated)
-  const periodLabel = period === 'mtd' ? 'Month to date' : period === 'custom' ? 'Custom' : period === '7d' ? 'Last 7 days' : 'Last 30 days'
+  const periodLabel = period === 'mtd' ? 'Month to date' : period === 'custom' ? 'Custom range' : period === '7d' ? 'Last 7 days' : 'Last 30 days'
   const categoryScopeLabel = selectedCategories.length ? `${selectedCategories.length} selected` : 'All categories'
 
   const topCategory = filteredCategories[0] ?? panel.topCategories[0]
@@ -232,15 +221,18 @@ export function ExpensePage() {
 
       <section className="mc-filterbar expense-scopebar" aria-label="Scope bar">
         <div className="scope-group" role="group" aria-label="Period selector">
-          <span className="toolbar-label">Period</span>
           <div className="mc-filter-chips" role="tablist" aria-label="Period presets">
-            {(['7d', '30d', 'mtd'] as PeriodKey[]).map((key) => (
-              <button key={key} type="button" className={`action-button ${period === key ? 'is-active' : ''}`} onClick={() => setPeriod(key)}>
-                {key.toUpperCase()}
-              </button>
-            ))}
+            <button type="button" className={`action-button ${period === '7d' ? 'is-active' : ''}`} onClick={() => setPeriod('7d')}>
+              Last 7 days
+            </button>
+            <button type="button" className={`action-button ${period === '30d' ? 'is-active' : ''}`} onClick={() => setPeriod('30d')}>
+              Last 30 days
+            </button>
+            <button type="button" className={`action-button ${period === 'mtd' ? 'is-active' : ''}`} onClick={() => setPeriod('mtd')}>
+              Month to date
+            </button>
             <button type="button" className={`action-button ${period === 'custom' ? 'is-active' : ''}`} onClick={() => setPeriod('custom')}>
-              Custom
+              Custom range
             </button>
           </div>
         </div>
@@ -258,60 +250,26 @@ export function ExpensePage() {
           </div>
         ) : null}
 
-        <div className="scope-group scope-group--category" ref={categoryDropdownRef}>
+        <div className="scope-group scope-group--category">
           <span className="toolbar-label">Category</span>
-          <button
-            type="button"
-            className={`action-button category-trigger ${isCategoryOpen ? 'is-active' : ''}`}
-            onClick={() => setIsCategoryOpen((prev) => !prev)}
-            aria-haspopup="menu"
-            aria-expanded={isCategoryOpen}
+          <select
+            multiple
+            className="category-multiselect"
+            value={selectedCategories}
+            onChange={handleCategorySelectChange}
             aria-label="Category filter"
           >
-            {allCategoriesSelected ? 'All categories' : 'Category filter'}
-          </button>
-
-          {isCategoryOpen ? (
-            <div className="category-menu" role="menu" aria-label="Category multi-select">
-              <input
-                type="search"
-                value={categoryQuery}
-                onChange={(event) => setCategoryQuery(event.target.value)}
-                placeholder="Search category"
-                aria-label="Search category"
-              />
-              <div className="category-menu-list">
-                <label className="category-option category-option--all">
-                  <input type="checkbox" checked={allCategoriesSelected} onChange={selectAllCategories} />
-                  <span>All categories</span>
-                </label>
-                {visibleCategoryOptions.length ? (
-                  visibleCategoryOptions.map((category) => {
-                    const selected = selectedCategories.includes(category)
-                    return (
-                      <label key={category} className={`category-option ${selected ? 'is-selected' : ''}`}>
-                        <input type="checkbox" checked={selected} onChange={() => toggleCategory(category)} />
-                        <span>{category}</span>
-                      </label>
-                    )
-                  })
-                ) : (
-                  <p className="muted">No categories match</p>
-                )}
-              </div>
-              <div className="category-menu-actions">
-                {selectedCategories.length ? (
-                  <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
-                    All categories
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button type="button" className="action-button" onClick={() => setIsCategoryOpen(false)}>
-                  Done
-                </button>
-              </div>
-            </div>
+            <option value="__all__">All categories</option>
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+          {!allCategoriesSelected ? (
+            <button type="button" className="action-button is-ghost category-clear" onClick={selectAllCategories}>
+              Clear category filters
+            </button>
           ) : null}
         </div>
 
@@ -471,10 +429,10 @@ export function ExpensePage() {
                 <span>{formatCurrency(selectedCategoryTotal)}</span>
               </div>
             </div>
-            <div className="category-card-grid">
+            <div className="category-card-stack">
               <button
                 type="button"
-                className={`category-row category-card ${allCategoriesSelected ? 'is-focused' : ''}`}
+                className={`category-row category-card category-card--all ${allCategoriesSelected ? 'is-focused' : ''}`}
                 onClick={selectAllCategories}
               >
                 <div>
@@ -484,26 +442,28 @@ export function ExpensePage() {
                 <span className="mc-chip mc-chip--neutral">{allCategoriesSelected ? 'Active' : 'Reset'}</span>
               </button>
 
-              {panel.topCategories.slice(0, 8).map((category) => {
-                const isFocused = selectedCategories.includes(category.category)
-                return (
-                  <button
-                    type="button"
-                    key={category.category}
-                    className={`category-row category-card ${isFocused ? 'is-focused' : ''}`}
-                    onClick={() => toggleCategory(category.category)}
-                  >
-                    <div>
-                      <p className="risk-title">
-                        <span className="category-dot" style={{ background: categoryColorMap.get(category.category) }} />
-                        {category.category}
-                      </p>
-                      <p className="risk-meta">{formatCurrency(category.amountInr)}</p>
-                    </div>
-                    <span className="mc-chip">{category.sharePct}%</span>
-                  </button>
-                )
-              })}
+              <div className="category-card-grid">
+                {panel.topCategories.slice(0, 8).map((category) => {
+                  const isFocused = selectedCategories.includes(category.category)
+                  return (
+                    <button
+                      type="button"
+                      key={category.category}
+                      className={`category-row category-card ${isFocused ? 'is-focused' : ''}`}
+                      onClick={() => toggleCategory(category.category)}
+                    >
+                      <div>
+                        <p className="risk-title">
+                          <span className="category-dot" style={{ background: categoryColorMap.get(category.category) }} />
+                          {category.category}
+                        </p>
+                        <p className="risk-meta">{formatCurrency(category.amountInr)}</p>
+                      </div>
+                      <span className="mc-chip">{category.sharePct}%</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </article>
