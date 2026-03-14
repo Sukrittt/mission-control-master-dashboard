@@ -14,9 +14,14 @@ export function SparkBars({
   showReferenceLines = false,
 }: SparkBarsProps) {
   const values = data.map((row) => row.value)
+  const sorted = [...values].sort((a, b) => a - b)
   const max = Math.max(...values, 1)
   const min = Math.min(...values, 0)
-  const spread = Math.max(1, max - min)
+  const q1Index = Math.max(0, Math.floor((sorted.length - 1) * 0.1))
+  const q9Index = Math.max(0, Math.floor((sorted.length - 1) * 0.9))
+  const robustMin = sorted[q1Index] ?? min
+  const robustMax = sorted[q9Index] ?? max
+  const robustSpread = Math.max(1, robustMax - robustMin)
 
   const avg = useMemo(() => {
     if (!data.length) return 0
@@ -39,7 +44,7 @@ export function SparkBars({
       {showReferenceLines ? (
         <div className="spark-reference-grid" aria-hidden="true">
           {referenceLevels.map((level) => {
-            const offset = spread === 0 ? 50 : ((level.value - min) / spread) * 100
+            const offset = robustSpread === 0 ? 50 : ((Math.max(robustMin, Math.min(robustMax, level.value)) - robustMin) / robustSpread) * 100
             return (
               <div key={level.label} className="spark-reference-line" style={{ bottom: `${offset}%` }}>
                 <span>{level.label}</span>
@@ -51,8 +56,9 @@ export function SparkBars({
 
       <div className="spark-bars-inner">
         {data.map((row, index) => {
-          const normalized = spread === 0 ? 0.5 : (row.value - min) / spread
-          const height = 20 + normalized * 100
+          const clamped = Math.max(robustMin, Math.min(robustMax, row.value))
+          const normalized = robustSpread === 0 ? 0.5 : (clamped - robustMin) / robustSpread
+          const height = 28 + normalized * 72
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
 

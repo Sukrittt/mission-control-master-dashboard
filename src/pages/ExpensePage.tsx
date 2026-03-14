@@ -55,6 +55,7 @@ export function ExpensePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [categoryQuery, setCategoryQuery] = useState('')
+  const [scopePulse, setScopePulse] = useState(0)
   const categoryDropdownRef = useRef<HTMLDivElement | null>(null)
 
   const latestDate = useMemo(() => {
@@ -71,13 +72,15 @@ export function ExpensePage() {
 
   function selectAllCategories() {
     setSelectedCategories([])
+    setScopePulse((value) => value + 1)
   }
 
   function toggleCategory(category: string) {
     setSelectedCategories((prev) => {
-      if (prev.includes(category)) return prev.filter((item) => item !== category)
-      return [...prev, category]
+      const next = prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]
+      return next
     })
+    setScopePulse((value) => value + 1)
   }
 
   useEffect(() => {
@@ -309,8 +312,9 @@ export function ExpensePage() {
 
         <div className="scope-chip-row" aria-label="Active filters">
           <span className="mc-chip">{periodLabel}</span>
-          <span className="mc-chip">{categoryScopeLabel}</span>
+          <span className={`mc-chip ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
           <span className="mc-chip">{stalenessText}</span>
+          {allCategoriesSelected ? <span className="mc-chip mc-chip--neutral">Global scope active</span> : null}
         </div>
       </section>
 
@@ -414,7 +418,7 @@ export function ExpensePage() {
           </div>
           <div className="mc-summary-row">
             {panel.alerts.slice(0, 2).map((alert) => (
-              <span key={alert} className="mc-chip mc-chip--amber">
+              <span key={alert} className="mc-chip mc-chip--neutral premium-chip">
                 {alert}
               </span>
             ))}
@@ -434,9 +438,9 @@ export function ExpensePage() {
                 <span>{formatCurrency(selectedCategoryTotal)}</span>
               </div>
             </div>
-            <div className="spaced-list">
+            <div className="category-card-grid">
               {filteredCategories.slice(0, 6).map((category) => (
-                <div key={category.category} className="category-row static-row">
+                <div key={category.category} className="category-row static-row category-card">
                   <div>
                     <p className="risk-title">{category.category}</p>
                     <p className="risk-meta">{formatCurrency(category.amountInr)}</p>

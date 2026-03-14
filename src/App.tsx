@@ -91,8 +91,10 @@ function AppShell() {
     trackEvent('page_view', { path: pathname })
   }, [pathname])
 
+  const isExpenseRoute = pathname === '/expense'
+
   return (
-    <main className={`mc-page theme-${theme} density-${density}`}>
+    <main className={`mc-page theme-${theme} density-${density} ${isExpenseRoute ? 'expense-shell' : ''}`}>
       <div className={`mc-layout ${sidebarCollapsed ? 'is-collapsed' : ''} ${mobileNavOpen ? 'is-mobile-open' : ''}`}>
         <aside className="mc-sidebar" aria-label="Primary Navigation">
           <div className="sidebar-brand">
