@@ -56,7 +56,7 @@ export function ExpensePage() {
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
-  const [categoryMenuPosition, setCategoryMenuPosition] = useState<{ top: number; right: number; minWidth: number } | null>(null)
+  const [categoryMenuPosition, setCategoryMenuPosition] = useState<{ top: number; left: number; minWidth: number } | null>(null)
   const categoryMenuRef = useRef<HTMLDivElement | null>(null)
   const categoryTriggerRef = useRef<HTMLButtonElement | null>(null)
 
@@ -112,10 +112,14 @@ export function ExpensePage() {
     function updatePosition() {
       const rect = categoryTriggerRef.current?.getBoundingClientRect()
       if (!rect) return
+      const horizontalPadding = 16
+      const minWidth = rect.width
+      const maxLeft = Math.max(horizontalPadding, window.innerWidth - minWidth - horizontalPadding)
+      const left = Math.min(Math.max(horizontalPadding, rect.left), maxLeft)
       setCategoryMenuPosition({
         top: rect.bottom + 6,
-        right: Math.max(16, window.innerWidth - rect.right),
-        minWidth: rect.width,
+        left,
+        minWidth,
       })
     }
 
@@ -254,7 +258,7 @@ export function ExpensePage() {
     categoryMenuPosition ??
     ({
       top: 0,
-      right: 0,
+      left: 0,
       minWidth: 140,
     } as const)
 
@@ -268,7 +272,7 @@ export function ExpensePage() {
       style={{
         position: 'fixed',
         top: `${menuPosition.top}px`,
-        right: `${menuPosition.right}px`,
+        left: `${menuPosition.left}px`,
         minWidth: `${menuPosition.minWidth}px`,
         display: isCategoryMenuVisible ? 'block' : 'none',
         pointerEvents: isCategoryMenuVisible ? 'auto' : 'none',
