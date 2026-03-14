@@ -7,6 +7,16 @@ interface SparkBarsProps {
   showReferenceLines?: boolean
 }
 
+function percentile(sorted: number[], p: number): number {
+  if (!sorted.length) return 0
+  const index = (sorted.length - 1) * p
+  const lo = Math.floor(index)
+  const hi = Math.ceil(index)
+  if (lo === hi) return sorted[lo]
+  const weight = index - lo
+  return sorted[lo] * (1 - weight) + sorted[hi] * weight
+}
+
 export function SparkBars({
   data,
   formatValue = (value) => `${value}`,
@@ -14,9 +24,20 @@ export function SparkBars({
   showReferenceLines = false,
 }: SparkBarsProps) {
   const values = data.map((row) => row.value)
-  const max = Math.max(...values, 1)
-  const min = Math.min(...values, 0)
-  const spread = Math.max(max - min, 1)
+  const sortedValues = [...values].sort((a, b) => a - b)
+
+  const rawMin = Math.min(...values, 0)
+  const p10 = percentile(sortedValues, 0.1)
+  const p90 = percentile(sortedValues, 0.9)
+
+  const robustMin = Math.min(rawMin, p10)
+  const robustMax = Math.max(p90, robustMin + 1)
+  const paddedMin = Math.min(0, robustMin * 0.92)
+  const paddedMax = robustMax * 1.08
+
+  const domainMin = Number.isFinite(paddedMin) ? paddedMin : 0
+  const domainMax = Number.isFinite(paddedMax) && paddedMax > domainMin ? paddedMax : domainMin + 1
+  const spread = Math.max(domainMax - domainMin, 1)
 
   const avg = useMemo(() => {
     if (!data.length) return 0
@@ -26,18 +47,18 @@ export function SparkBars({
   const referenceLevels = useMemo(() => {
     if (!showReferenceLines) return []
     return [
-      { label: 'Max', value: max },
+      { label: 'Clip max', value: domainMax },
       { label: 'Avg', value: avg },
-      { label: 'Min', value: min },
+      { label: 'Floor', value: domainMin },
     ]
-  }, [avg, max, min, showReferenceLines])
+  }, [avg, domainMax, domainMin, showReferenceLines])
 
   const yTicks = useMemo(() => {
-    const top = max
-    const mid = min + spread / 2
-    const low = min
+    const top = domainMax
+    const mid = domainMin + spread / 2
+    const low = domainMin
     return [top, mid, low]
-  }, [max, min, spread])
+  }, [domainMax, domainMin, spread])
 
   const labelEvery = size === 'expanded' ? 2 : size === 'default' ? 2 : 4
 
@@ -70,7 +91,8 @@ export function SparkBars({
       {showReferenceLines ? (
         <div className="spark-reference-grid" aria-hidden="true">
           {referenceLevels.map((level) => {
-            const offset = ((level.value - min) / spread) * 100
+            const clipped = Math.max(domainMin, Math.min(domainMax, level.value))
+            const offset = ((clipped - domainMin) / spread) * 100
             return (
               <div key={level.label} className="spark-reference-line" style={{ bottom: `${offset}%` }}>
                 <span>{level.label}</span>
@@ -82,11 +104,14 @@ export function SparkBars({
 
       <div className="spark-bars-inner">
         {data.map((row, index) => {
-          const normalized = (row.value - min) / spread
-          const height = 16 + normalized * 84
+          const clipped = Math.max(domainMin, Math.min(domainMax, row.value))
+          const normalized = (clipped - domainMin) / spread
+          const height = 20 + normalized * 80
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
           const isCurrent = index === data.length - 1
+          const isClippedHigh = row.value > domainMax
+          const isNearFloor = row.value <= domainMin + spread * 0.02
 
           return (
             <div
@@ -95,7 +120,9 @@ export function SparkBars({
               title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
             >
               {isCurrent ? <strong className="spark-current-value">{formatValue(row.value)}</strong> : null}
+              {isClippedHigh ? <span className="spark-cap-marker" aria-hidden="true">▲</span> : null}
               <div className="spark-bar" style={{ height: `${height}%` }} />
+              {isNearFloor ? <span className="spark-floor-marker" aria-hidden="true">•</span> : null}
               <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
             </div>
           )

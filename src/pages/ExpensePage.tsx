@@ -268,8 +268,7 @@ export function ExpensePage() {
             aria-expanded={isCategoryOpen}
             aria-label="Category filter"
           >
-            {allCategoriesSelected ? 'All categories' : 'Filtered categories'}
-            <span className="mc-chip">Scope</span>
+            {allCategoriesSelected ? 'All categories' : 'Category filter'}
           </button>
 
           {isCategoryOpen ? (
@@ -316,13 +315,11 @@ export function ExpensePage() {
           ) : null}
         </div>
 
-        <div className="scope-chip-row" aria-label="Active filters">
-          <span className="mc-chip">{periodLabel}</span>
-          <span className="mc-chip">{stalenessText}</span>
-          <span className="mc-chip mc-chip--neutral">Scope: {allCategoriesSelected ? 'All categories' : selectedCategories.join(', ')}</span>
-          <span className={`mc-chip scope-status-chip ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
+        <div className="scope-meta-inline" aria-label="Scope status">
+          <span>{stalenessText}</span>
+          <span>Scope: {allCategoriesSelected ? 'All categories' : selectedCategories.join(', ')}</span>
+          <span className={`scope-inline-count ${scopePulse ? 'is-pulse' : ''}`} key={scopePulse}>{categoryScopeLabel}</span>
         </div>
-        <p className="scope-helper">Tip: click category cards to multi-select. Use “All categories” to reset global view.</p>
       </section>
 
       <section className="mc-kpi-strip mc-kpi-strip--expense" aria-label="Expense KPIs">
@@ -403,7 +400,7 @@ export function ExpensePage() {
           <p className="subscription-amount">{formatCurrency(subscriptionCategory?.amountInr ?? 0)}</p>
 
           <div className="subscription-lists">
-            <details className="mc-accordion-item subscription-accordion" open>
+            <details className="subscription-accordion" open>
               <summary>
                 <h4>Active ({panel.subscriptions.active.length})</h4>
                 <span className="chevron" aria-hidden="true">▾</span>
@@ -417,7 +414,7 @@ export function ExpensePage() {
               </ul>
             </details>
 
-            <details className="mc-accordion-item subscription-accordion">
+            <details className="subscription-accordion">
               <summary>
                 <h4>Cancelled ({panel.subscriptions.cancelled.length})</h4>
                 <span className="chevron" aria-hidden="true">▾</span>

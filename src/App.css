@@ -1010,6 +1010,22 @@ input[type='date']:hover {
   min-height: 14px;
 }
 
+.spark-cap-marker,
+.spark-floor-marker {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--muted-2);
+  min-height: 0;
+}
+
+.spark-cap-marker {
+  margin-bottom: -2px;
+}
+
+.spark-floor-marker {
+  margin-top: 2px;
+}
+
 .category-row {
   width: 100%;
   display: flex;
@@ -1266,21 +1282,25 @@ input[type='date']:hover {
   position: relative;
 }
 
-.scope-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2);
-}
-
-.scope-status-chip {
+.scope-meta-inline {
   margin-left: auto;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--expense-muted, var(--muted-2));
+  font-size: var(--fs-12);
+  white-space: nowrap;
 }
 
-.scope-helper {
-  width: 100%;
-  font-size: var(--fs-11);
-  color: var(--expense-muted, var(--muted-2));
+.scope-meta-inline > span + span::before {
+  content: '•';
+  margin-right: 8px;
+  opacity: 0.6;
+}
+
+.scope-inline-count.is-pulse {
+  color: #eef3ff;
 }
 
 .expense-scopebar .action-button,
@@ -1290,7 +1310,7 @@ input[type='date']:hover {
 }
 
 .expense-scopebar .scope-group,
-.expense-scopebar .scope-chip-row {
+.expense-scopebar .scope-meta-inline {
   align-self: end;
 }
 
@@ -1328,23 +1348,23 @@ input[type='date']:hover {
   grid-row: 1 / span 2;
 }
 
-.expense-weekly-panel {
+.expense-category-panel {
   grid-column: 2;
   grid-row: 1;
 }
 
-.expense-subscriptions-panel {
+.expense-weekly-panel {
   grid-column: 2;
   grid-row: 2;
 }
 
-.expense-review-panel {
-  grid-column: 1;
+.expense-subscriptions-panel {
+  grid-column: 2;
   grid-row: 3;
 }
 
-.expense-category-panel {
-  grid-column: 2;
+.expense-review-panel {
+  grid-column: 1;
   grid-row: 3;
 }
 
@@ -1441,7 +1461,7 @@ input[type='date']:hover {
 
 .subscription-lists {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .subscription-lists h4 {
@@ -1453,13 +1473,34 @@ input[type='date']:hover {
 }
 
 .subscription-accordion {
-  background: var(--expense-panel-soft);
-  border-color: var(--expense-border);
-  padding: 8px;
+  border-top: 1px solid var(--expense-border);
+  padding-top: 6px;
+}
+
+.subscription-accordion:last-child {
+  border-bottom: 1px solid var(--expense-border);
+  padding-bottom: 6px;
 }
 
 .subscription-accordion summary {
   min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+
+.subscription-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.subscription-accordion .chevron {
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.subscription-accordion[open] .chevron {
+  transform: rotate(180deg);
 }
 
 .compact-bullets {
