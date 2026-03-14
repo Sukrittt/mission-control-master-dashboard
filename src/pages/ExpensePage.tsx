@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import expenseSample from '../data/expensePanel.sample.json'
 import { SparkBars } from '../components/SparkBars'
 import { toExpensePanelData } from '../services/expensePanelAdapter'
@@ -55,7 +56,9 @@ export function ExpensePage() {
   const [trendView, setTrendView] = useState<TrendView>('weekly')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
+  const [categoryMenuPosition, setCategoryMenuPosition] = useState<{ top: number; right: number; minWidth: number } | null>(null)
   const categoryMenuRef = useRef<HTMLDivElement | null>(null)
+  const categoryTriggerRef = useRef<HTMLButtonElement | null>(null)
 
   const latestDate = useMemo(() => {
     const last = panel.miniTrend.at(-1)?.date ?? panel.month
@@ -81,9 +84,11 @@ export function ExpensePage() {
     if (!isCategoryMenuOpen) return
 
     function handleClickOutside(event: MouseEvent) {
-      if (!categoryMenuRef.current?.contains(event.target as Node)) {
-        setIsCategoryMenuOpen(false)
+      const target = event.target as Node
+      if (categoryMenuRef.current?.contains(target) || categoryTriggerRef.current?.contains(target)) {
+        return
       }
+      setIsCategoryMenuOpen(false)
     }
 
     function handleEscape(event: KeyboardEvent) {
@@ -98,6 +103,29 @@ export function ExpensePage() {
     return () => {
       window.removeEventListener('mousedown', handleClickOutside)
       window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isCategoryMenuOpen])
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) return
+
+    function updatePosition() {
+      const rect = categoryTriggerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setCategoryMenuPosition({
+        top: rect.bottom + 6,
+        right: Math.max(16, window.innerWidth - rect.right),
+        minWidth: rect.width,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
     }
   }, [isCategoryMenuOpen])
 
@@ -221,6 +249,59 @@ export function ExpensePage() {
     return `conic-gradient(${slices.join(', ')})`
   }, [categoryColorMap, donutSegments])
 
+  const categoryMenu =
+    isCategoryMenuOpen && categoryMenuPosition
+      ? createPortal(
+          <div
+            className="category-menu category-menu--portal"
+            role="menu"
+            aria-label="Category filter menu"
+            ref={categoryMenuRef}
+            style={{
+              position: 'fixed',
+              top: `${categoryMenuPosition.top}px`,
+              right: `${categoryMenuPosition.right}px`,
+              minWidth: `${categoryMenuPosition.minWidth}px`,
+            }}
+          >
+            <div className="category-menu-list">
+              <button
+                type="button"
+                className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
+                onClick={selectAllCategories}
+              >
+                <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
+                All categories
+              </button>
+
+              {categoryOptions.map((category) => {
+                const isSelected = selectedCategories.includes(category)
+                return (
+                  <button
+                    type="button"
+                    key={category}
+                    className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
+                    onClick={() => toggleCategory(category)}
+                  >
+                    <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
+                    {category}
+                  </button>
+                )
+              })}
+            </div>
+
+            {!allCategoriesSelected ? (
+              <div className="category-menu-actions">
+                <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
+                  Clear category filters
+                </button>
+              </div>
+            ) : null}
+          </div>,
+          document.body,
+        )
+      : null
+
   return (
     <section className="mc-content-grid expense-view">
       <section className="headline">
@@ -266,7 +347,7 @@ export function ExpensePage() {
 
         <div className="scope-meta-inline" aria-label="Scope status">
           <span>{stalenessText}</span>
-          <span className="scope-inline-category" ref={categoryMenuRef}>
+          <span className="scope-inline-category">
             <div className="category-dropdown category-dropdown--inline">
               <button
                 type="button"
@@ -274,48 +355,11 @@ export function ExpensePage() {
                 onClick={() => setIsCategoryMenuOpen((open) => !open)}
                 aria-haspopup="menu"
                 aria-expanded={isCategoryMenuOpen}
+                ref={categoryTriggerRef}
               >
                 <span>{categoryScopeLabel}</span>
                 <span aria-hidden="true">▾</span>
               </button>
-
-              {isCategoryMenuOpen ? (
-                <div className="category-menu" role="menu" aria-label="Category filter menu">
-                  <div className="category-menu-list">
-                    <button
-                      type="button"
-                      className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
-                      onClick={selectAllCategories}
-                    >
-                      <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
-                      All categories
-                    </button>
-
-                    {categoryOptions.map((category) => {
-                      const isSelected = selectedCategories.includes(category)
-                      return (
-                        <button
-                          type="button"
-                          key={category}
-                          className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
-                          onClick={() => toggleCategory(category)}
-                        >
-                          <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
-                          {category}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {!allCategoriesSelected ? (
-                    <div className="category-menu-actions">
-                      <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
-                        Clear category filters
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           </span>
         </div>
@@ -517,6 +561,7 @@ export function ExpensePage() {
           </a>
         ))}
       </div>
+      {categoryMenu}
     </section>
   )
 }

@@ -762,6 +762,11 @@ h4 {
   overflow: hidden;
 }
 
+.category-menu--portal {
+  position: fixed;
+  z-index: 120;
+}
+
 .category-menu input[type='search'] {
   min-height: 32px;
   border: 1px solid var(--border);
@@ -1299,7 +1304,8 @@ input[type='date']:hover {
   min-height: 34px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 12px;
   color: var(--expense-muted, var(--muted-2));
   font-size: var(--fs-12);
   white-space: nowrap;

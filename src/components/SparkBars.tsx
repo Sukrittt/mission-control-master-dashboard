@@ -30,12 +30,12 @@ export function SparkBars({
   const rawMax = Math.max(...values, 0)
   const p10 = percentile(sortedValues, 0.1)
   const p50 = percentile(sortedValues, 0.5)
-  const p90 = percentile(sortedValues, 0.9)
+  const p95 = percentile(sortedValues, 0.95)
 
   const robustMin = Math.min(rawMin, p10)
-  const robustMax = Math.max(p90, robustMin + 1)
+  const clipMax = Math.max(p95, robustMin + 1)
   const paddedMin = Math.min(0, robustMin * 0.92)
-  const paddedMax = robustMax * 1.08
+  const paddedMax = clipMax * 1.08
 
   const useLogScale = rawMax > 0 && rawMax / Math.max(p50 || rawMin || 1, 1) > 6
   const transform = (value: number) => (useLogScale ? Math.log10(Math.max(0, value) + 1) : value)
@@ -60,11 +60,11 @@ export function SparkBars({
   }, [avg, rawMax, rawMin, showReferenceLines])
 
   const yTicks = useMemo(() => {
-    const top = rawMax
-    const mid = rawMin + (rawMax - rawMin) / 2
+    const top = clipMax
+    const mid = rawMin + (clipMax - rawMin) / 2
     const low = rawMin
     return [top, mid, low]
-  }, [rawMax, rawMin])
+  }, [clipMax, rawMin])
 
   const labelEvery = size === 'expanded' ? 2 : size === 'default' ? 2 : 4
 
@@ -116,6 +116,7 @@ export function SparkBars({
           const prev = data[index - 1]?.value ?? row.value
           const deltaPct = prev ? ((row.value - prev) / prev) * 100 : 0
           const isCurrent = index === data.length - 1
+          const isOutlier = row.value > clipMax
 
           return (
             <div
@@ -123,6 +124,7 @@ export function SparkBars({
               className={`spark-bar-wrap ${isCurrent ? 'is-current' : ''}`}
               title={`${row.date}: ${formatValue(row.value)} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs prev)`}
             >
+              {isOutlier ? <span className="spark-cap-marker">▲ Outlier</span> : null}
               {isCurrent ? <strong className="spark-current-value">{formatValue(row.value)}</strong> : null}
               <div className="spark-bar" style={{ height: `${height}%` }} />
               <span>{index % labelEvery === 0 || index === data.length - 1 ? getLabel(row.date) : ''}</span>
