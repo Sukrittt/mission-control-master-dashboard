@@ -1418,10 +1418,21 @@ input[type='date']:hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
+.spark-bar-value {
+  font-size: var(--fs-11);
+  color: var(--muted-2);
+  line-height: 1;
+}
+
 .spark-current-value {
   font-size: var(--fs-11);
   color: #f4f7ff;
   line-height: 1;
+}
+
+.expense-view .spark-bar-value {
+  color: #f4f7ff;
+  font-weight: var(--fw-semibold);
 }
 
 .expense-view .spark-bar-wrap span {

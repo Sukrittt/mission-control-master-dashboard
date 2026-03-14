@@ -249,58 +249,67 @@ export function ExpensePage() {
     return `conic-gradient(${slices.join(', ')})`
   }, [categoryColorMap, donutSegments])
 
-  const categoryMenu =
-    isCategoryMenuOpen && categoryMenuPosition
-      ? createPortal(
-          <div
-            className="category-menu category-menu--portal"
-            role="menu"
-            aria-label="Category filter menu"
-            ref={categoryMenuRef}
-            style={{
-              position: 'fixed',
-              top: `${categoryMenuPosition.top}px`,
-              right: `${categoryMenuPosition.right}px`,
-              minWidth: `${categoryMenuPosition.minWidth}px`,
-            }}
-          >
-            <div className="category-menu-list">
-              <button
-                type="button"
-                className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
-                onClick={selectAllCategories}
-              >
-                <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
-                All categories
-              </button>
+  const isCategoryMenuVisible = Boolean(isCategoryMenuOpen && categoryMenuPosition)
+  const menuPosition =
+    categoryMenuPosition ??
+    ({
+      top: 0,
+      right: 0,
+      minWidth: 140,
+    } as const)
 
-              {categoryOptions.map((category) => {
-                const isSelected = selectedCategories.includes(category)
-                return (
-                  <button
-                    type="button"
-                    key={category}
-                    className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
-                    {category}
-                  </button>
-                )
-              })}
-            </div>
+  const categoryMenu = createPortal(
+    <div
+      className="category-menu category-menu--portal"
+      role="menu"
+      aria-label="Category filter menu"
+      aria-hidden={!isCategoryMenuVisible}
+      ref={categoryMenuRef}
+      style={{
+        position: 'fixed',
+        top: `${menuPosition.top}px`,
+        right: `${menuPosition.right}px`,
+        minWidth: `${menuPosition.minWidth}px`,
+        display: isCategoryMenuVisible ? 'block' : 'none',
+        pointerEvents: isCategoryMenuVisible ? 'auto' : 'none',
+      }}
+    >
+      <div className="category-menu-list">
+        <button
+          type="button"
+          className={`action-button is-ghost category-option category-option--all ${allCategoriesSelected ? 'is-selected' : ''}`}
+          onClick={selectAllCategories}
+        >
+          <input type="checkbox" readOnly checked={allCategoriesSelected} tabIndex={-1} aria-hidden="true" />
+          All categories
+        </button>
 
-            {!allCategoriesSelected ? (
-              <div className="category-menu-actions">
-                <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
-                  Clear category filters
-                </button>
-              </div>
-            ) : null}
-          </div>,
-          document.body,
-        )
-      : null
+        {categoryOptions.map((category) => {
+          const isSelected = selectedCategories.includes(category)
+          return (
+            <button
+              type="button"
+              key={category}
+              className={`action-button is-ghost category-option ${isSelected ? 'is-selected' : ''}`}
+              onClick={() => toggleCategory(category)}
+            >
+              <input type="checkbox" readOnly checked={isSelected} tabIndex={-1} aria-hidden="true" />
+              {category}
+            </button>
+          )
+        })}
+      </div>
+
+      {!allCategoriesSelected ? (
+        <div className="category-menu-actions">
+          <button type="button" className="action-button is-ghost" onClick={selectAllCategories}>
+            Clear category filters
+          </button>
+        </div>
+      ) : null}
+    </div>,
+    document.body,
+  )
 
   return (
     <section className="mc-content-grid expense-view">
@@ -409,7 +418,8 @@ export function ExpensePage() {
             </div>
           </div>
           <p className="muted">Each bar = total spend per {trendView === 'weekly' ? 'week' : 'month'} • {periodLabel} • Peak {peakPoint.date} ({formatCurrency(peakPoint.value)})</p>
-          <SparkBars data={trendSeries} size="expanded" showReferenceLines formatValue={(value) => formatCurrency(value)} />
+          <p className="muted">Bars normalized; labels show actual ₹.</p>
+          <SparkBars data={trendSeries} size="expanded" formatValue={(value) => formatCurrency(value)} />
         </article>
 
         <article className="mc-panel expense-weekly-panel">
